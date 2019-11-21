@@ -131,7 +131,7 @@
 
 <span class="doccomment">/// A collapse-id container. Will not allow bigger id&#39;s than 64 bytes.</span>
 <span class="kw">impl</span><span class="op">&lt;</span><span class="lifetime">&#39;a</span><span class="op">&gt;</span> <span class="ident">CollapseId</span><span class="op">&lt;</span><span class="lifetime">&#39;a</span><span class="op">&gt;</span> {
-    <span class="kw">pub</span> <span class="kw">fn</span> <span class="ident">new</span>(<span class="ident">value</span>: <span class="kw-2">&amp;</span><span class="lifetime">&#39;a</span> <span class="ident">str</span>) <span class="op">-&gt;</span> <span class="prelude-ty">Result</span><span class="op">&lt;</span><span class="ident">CollapseId</span><span class="op">&lt;</span><span class="lifetime">&#39;a</span><span class="op">&gt;</span>, <span class="ident">Error</span><span class="op">&gt;</span> {
+    <span class="kw">pub</span> <span class="kw">fn</span> <span class="ident">new</span>(<span class="ident">value</span>: <span class="kw-2">&amp;</span><span class="lifetime">&#39;a</span> <span class="ident">str</span>) <span class="op">-</span><span class="op">&gt;</span> <span class="prelude-ty">Result</span><span class="op">&lt;</span><span class="ident">CollapseId</span><span class="op">&lt;</span><span class="lifetime">&#39;a</span><span class="op">&gt;</span>, <span class="ident">Error</span><span class="op">&gt;</span> {
         <span class="kw">if</span> <span class="ident">value</span>.<span class="ident">len</span>() <span class="op">&gt;</span> <span class="number">64</span> {
             <span class="prelude-val">Err</span>(<span class="ident">Error</span>::<span class="ident">InvalidOptions</span>(<span class="ident">String</span>::<span class="ident">from</span>(
                 <span class="string">&quot;The collapse-id is too big. Maximum 64 bytes.&quot;</span>,
@@ -160,8 +160,8 @@
     <span class="doccomment">/// the notification or attempt to redeliver it.</span>
     <span class="kw">pub</span> <span class="ident">apns_expiration</span>: <span class="prelude-ty">Option</span><span class="op">&lt;</span><span class="ident">u64</span><span class="op">&gt;</span>,
 
-    <span class="doccomment">/// The priority of the notification.</span>
-    <span class="kw">pub</span> <span class="ident">apns_priority</span>: <span class="ident">Priority</span>,
+    <span class="doccomment">/// The priority of the notification. If `None`, the APNs server sets the priority to High.</span>
+    <span class="kw">pub</span> <span class="ident">apns_priority</span>: <span class="prelude-ty">Option</span><span class="op">&lt;</span><span class="ident">Priority</span><span class="op">&gt;</span>,
 
     <span class="doccomment">/// The topic of the remote notification, which is typically the bundle ID</span>
     <span class="doccomment">/// for your app. The certificate you create in your developer account must</span>
@@ -182,15 +182,15 @@
     <span class="doccomment">/// Multiple notifications with the same collapse identifier are displayed to the</span>
     <span class="doccomment">/// user as a single notification. The value of this key must not exceed 64</span>
     <span class="doccomment">/// bytes.</span>
-    <span class="kw">pub</span> <span class="ident">apns_collapse_id</span>: <span class="prelude-ty">Option</span><span class="op">&lt;</span><span class="ident">CollapseId</span><span class="op">&lt;</span><span class="lifetime">&#39;a</span><span class="op">&gt;&gt;</span>,
+    <span class="kw">pub</span> <span class="ident">apns_collapse_id</span>: <span class="prelude-ty">Option</span><span class="op">&lt;</span><span class="ident">CollapseId</span><span class="op">&lt;</span><span class="lifetime">&#39;a</span><span class="op">&gt;</span><span class="op">&gt;</span>,
 }
 
 <span class="kw">impl</span><span class="op">&lt;</span><span class="lifetime">&#39;a</span><span class="op">&gt;</span> <span class="ident">Default</span> <span class="kw">for</span> <span class="ident">NotificationOptions</span><span class="op">&lt;</span><span class="lifetime">&#39;a</span><span class="op">&gt;</span> {
-    <span class="kw">fn</span> <span class="ident">default</span>() <span class="op">-&gt;</span> <span class="ident">NotificationOptions</span><span class="op">&lt;</span><span class="lifetime">&#39;a</span><span class="op">&gt;</span> {
+    <span class="kw">fn</span> <span class="ident">default</span>() <span class="op">-</span><span class="op">&gt;</span> <span class="ident">NotificationOptions</span><span class="op">&lt;</span><span class="lifetime">&#39;a</span><span class="op">&gt;</span> {
         <span class="ident">NotificationOptions</span> {
             <span class="ident">apns_id</span>: <span class="prelude-val">None</span>,
             <span class="ident">apns_expiration</span>: <span class="prelude-val">None</span>,
-            <span class="ident">apns_priority</span>: <span class="ident">Priority</span>::<span class="ident">Normal</span>,
+            <span class="ident">apns_priority</span>: <span class="prelude-val">None</span>,
             <span class="ident">apns_topic</span>: <span class="prelude-val">None</span>,
             <span class="ident">apns_collapse_id</span>: <span class="prelude-val">None</span>,
         }
@@ -213,10 +213,10 @@
 }
 
 <span class="kw">impl</span> <span class="ident">fmt</span>::<span class="ident">Display</span> <span class="kw">for</span> <span class="ident">Priority</span> {
-    <span class="kw">fn</span> <span class="ident">fmt</span>(<span class="kw-2">&amp;</span><span class="self">self</span>, <span class="ident">f</span>: <span class="kw-2">&amp;</span><span class="kw-2">mut</span> <span class="ident">fmt</span>::<span class="ident">Formatter</span><span class="op">&lt;</span><span class="lifetime">&#39;_</span><span class="op">&gt;</span>) <span class="op">-&gt;</span> <span class="ident">fmt</span>::<span class="prelude-ty">Result</span> {
+    <span class="kw">fn</span> <span class="ident">fmt</span>(<span class="kw-2">&amp;</span><span class="self">self</span>, <span class="ident">f</span>: <span class="kw-2">&amp;</span><span class="kw-2">mut</span> <span class="ident">fmt</span>::<span class="ident">Formatter</span><span class="op">&lt;</span><span class="lifetime">&#39;_</span><span class="op">&gt;</span>) <span class="op">-</span><span class="op">&gt;</span> <span class="ident">fmt</span>::<span class="prelude-ty">Result</span> {
         <span class="kw">let</span> <span class="ident">priority</span> <span class="op">=</span> <span class="kw">match</span> <span class="self">self</span> {
-            <span class="ident">Priority</span>::<span class="ident">High</span> <span class="op">=&gt;</span> <span class="string">&quot;10&quot;</span>,
-            <span class="ident">Priority</span>::<span class="ident">Normal</span> <span class="op">=&gt;</span> <span class="string">&quot;5&quot;</span>,
+            <span class="ident">Priority</span>::<span class="ident">High</span> <span class="op">=</span><span class="op">&gt;</span> <span class="string">&quot;10&quot;</span>,
+            <span class="ident">Priority</span>::<span class="ident">Normal</span> <span class="op">=</span><span class="op">&gt;</span> <span class="string">&quot;5&quot;</span>,
         };
 
         <span class="macro">write</span><span class="macro">!</span>(<span class="ident">f</span>, <span class="string">&quot;{}&quot;</span>, <span class="ident">priority</span>)

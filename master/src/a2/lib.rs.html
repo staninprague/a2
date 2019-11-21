@@ -149,19 +149,6 @@
 <span id="149">149</span>
 <span id="150">150</span>
 <span id="151">151</span>
-<span id="152">152</span>
-<span id="153">153</span>
-<span id="154">154</span>
-<span id="155">155</span>
-<span id="156">156</span>
-<span id="157">157</span>
-<span id="158">158</span>
-<span id="159">159</span>
-<span id="160">160</span>
-<span id="161">161</span>
-<span id="162">162</span>
-<span id="163">163</span>
-<span id="164">164</span>
 </pre><div class="example-wrap"><pre class="rust ">
 <span class="doccomment">//! # A2</span>
 <span class="doccomment">//!</span>
@@ -175,9 +162,6 @@
 <span class="doccomment">//! it, or a private key in PKCS8 PEM format with the corresponding team and key</span>
 <span class="doccomment">//! ids. All of these should be available from Xcode or your Apple developer</span>
 <span class="doccomment">//! account.</span>
-<span class="doccomment">//!</span>
-<span class="doccomment">//! The library is meant to be high performace and typesafe, used together with</span>
-<span class="doccomment">//! the [Tokio framework](https://tokio.rs) in an asynchronous event loop.</span>
 <span class="doccomment">//!</span>
 <span class="doccomment">//! ## Payload</span>
 <span class="doccomment">//!</span>
@@ -202,37 +186,28 @@
 <span class="doccomment">//! ## Example sending a plain notification using token authentication:</span>
 <span class="doccomment">//!</span>
 <span class="doccomment">//! ```no_run</span>
-<span class="doccomment">//! use a2::{PlainNotificationBuilder, NotificationBuilder, Client, Endpoint};</span>
-<span class="doccomment">//! use std::fs::File;</span>
-<span class="doccomment">//! use futures::future::lazy;</span>
-<span class="doccomment">//! use futures::Future;</span>
+<span class="doccomment">//! # use a2::{PlainNotificationBuilder, NotificationBuilder, Client, Endpoint};</span>
+<span class="doccomment">//! # use std::fs::File;</span>
+<span class="doccomment">//! # #[tokio::main]</span>
+<span class="doccomment">//! # async fn main() -&gt; Result&lt;(), Box&lt;dyn std::error::Error + Send + Sync&gt;&gt; {</span>
+<span class="doccomment">//! let mut builder = PlainNotificationBuilder::new(&quot;Hi there&quot;);</span>
+<span class="doccomment">//! builder.set_badge(420);</span>
+<span class="doccomment">//! builder.set_category(&quot;cat1&quot;);</span>
+<span class="doccomment">//! builder.set_sound(&quot;ping.flac&quot;);</span>
 <span class="doccomment">//!</span>
-<span class="doccomment">//! fn main() {</span>
-<span class="doccomment">//!     let mut builder = PlainNotificationBuilder::new(&quot;Hi there&quot;);</span>
-<span class="doccomment">//!     builder.set_badge(420);</span>
-<span class="doccomment">//!     builder.set_category(&quot;cat1&quot;);</span>
-<span class="doccomment">//!     builder.set_sound(&quot;ping.flac&quot;);</span>
+<span class="doccomment">//! let payload = builder.build(&quot;device-token-from-the-user&quot;, Default::default());</span>
+<span class="doccomment">//! let mut file = File::open(&quot;/path/to/private_key.p8&quot;)?;</span>
 <span class="doccomment">//!</span>
-<span class="doccomment">//!     let payload = builder.build(&quot;device-token-from-the-user&quot;, Default::default());</span>
-<span class="doccomment">//!     let mut file = File::open(&quot;/path/to/private_key.p8&quot;).unwrap();</span>
+<span class="doccomment">//! let client = Client::token(</span>
+<span class="doccomment">//!     &amp;mut file,</span>
+<span class="doccomment">//!     &quot;KEY_ID&quot;,</span>
+<span class="doccomment">//!     &quot;TEAM_ID&quot;,</span>
+<span class="doccomment">//!     Endpoint::Production).unwrap();</span>
 <span class="doccomment">//!</span>
-<span class="doccomment">//!     let client = Client::token(</span>
-<span class="doccomment">//!         &amp;mut file,</span>
-<span class="doccomment">//!         &quot;KEY_ID&quot;,</span>
-<span class="doccomment">//!         &quot;TEAM_ID&quot;,</span>
-<span class="doccomment">//!         Endpoint::Production).unwrap();</span>
-<span class="doccomment">//!</span>
-<span class="doccomment">//!     tokio::run(lazy(move || {</span>
-<span class="doccomment">//!         client</span>
-<span class="doccomment">//!             .send(payload)</span>
-<span class="doccomment">//!             .map(|response| {</span>
-<span class="doccomment">//!                 println!(&quot;Sent: {:?}&quot;, response);</span>
-<span class="doccomment">//!             })</span>
-<span class="doccomment">//!             .map_err(|error| {</span>
-<span class="doccomment">//!                 println!(&quot;Error: {:?}&quot;, error);</span>
-<span class="doccomment">//!            })</span>
-<span class="doccomment">//!     }));</span>
-<span class="doccomment">//! }</span>
+<span class="doccomment">//! let response = client.send(payload).await?;</span>
+<span class="doccomment">//! println!(&quot;Sent: {:?}&quot;, response);</span>
+<span class="doccomment">//! # Ok(())</span>
+<span class="doccomment">//! # }</span>
 <span class="doccomment">//! ```</span>
 <span class="doccomment">//!</span>
 <span class="doccomment">//! ## Example sending a silent notification with custom data using certificate authentication:</span>
@@ -240,10 +215,11 @@
 <span class="doccomment">//! ```no_run</span>
 <span class="doccomment">//! #[macro_use] extern crate serde_derive;</span>
 <span class="doccomment">//!</span>
-<span class="doccomment">//! use a2::{Client, Endpoint, SilentNotificationBuilder, NotificationBuilder};</span>
+<span class="doccomment">//! use a2::{</span>
+<span class="doccomment">//!     Client, Endpoint, SilentNotificationBuilder, NotificationBuilder, NotificationOptions, </span>
+<span class="doccomment">//!     Priority,</span>
+<span class="doccomment">//! };</span>
 <span class="doccomment">//! use std::fs::File;</span>
-<span class="doccomment">//! use futures::future::lazy;</span>
-<span class="doccomment">//! use futures::Future;</span>
 <span class="doccomment">//!</span>
 <span class="doccomment">//! #[derive(Serialize, Debug)]</span>
 <span class="doccomment">//! struct CorporateData {</span>
@@ -251,34 +227,33 @@
 <span class="doccomment">//!     is_paying_user: bool,</span>
 <span class="doccomment">//! }</span>
 <span class="doccomment">//!</span>
-<span class="doccomment">//! fn main() {</span>
+<span class="doccomment">//! #[tokio::main]</span>
+<span class="doccomment">//! async fn main() -&gt; Result&lt;(), Box&lt;dyn std::error::Error + Send + Sync&gt;&gt; {</span>
 <span class="doccomment">//!     let tracking_data = CorporateData {</span>
 <span class="doccomment">//!         tracking_code: &quot;999-212-UF-NSA&quot;,</span>
 <span class="doccomment">//!         is_paying_user: false,</span>
 <span class="doccomment">//!     };</span>
 <span class="doccomment">//!</span>
 <span class="doccomment">//!     let mut payload = SilentNotificationBuilder::new()</span>
-<span class="doccomment">//!         .build(&quot;device-token-from-the-user&quot;, Default::default());</span>
-<span class="doccomment">//!     payload.add_custom_data(&quot;apns_gmbh&quot;, &amp;tracking_data).unwrap();</span>
+<span class="doccomment">//!         .build(&quot;device-token-from-the-user&quot;,</span>
+<span class="doccomment">//!         NotificationOptions {</span>
+<span class="doccomment">//!             apns_priority: Some(Priority::Normal),</span>
+<span class="doccomment">//!             ..Default::default()</span>
+<span class="doccomment">//!         },</span>
+<span class="doccomment">//!     );</span>
+<span class="doccomment">//!     payload.add_custom_data(&quot;apns_gmbh&quot;, &amp;tracking_data)?;</span>
 <span class="doccomment">//!</span>
-<span class="doccomment">//!     let mut file = File::open(&quot;/path/to/cert_db.p12&quot;).unwrap();</span>
+<span class="doccomment">//!     let mut file = File::open(&quot;/path/to/cert_db.p12&quot;)?;</span>
 <span class="doccomment">//!</span>
 <span class="doccomment">//!     let client = Client::certificate(</span>
 <span class="doccomment">//!         &amp;mut file,</span>
 <span class="doccomment">//!         &quot;Correct Horse Battery Stable&quot;,</span>
-<span class="doccomment">//!         Endpoint::Production).unwrap();</span>
+<span class="doccomment">//!         Endpoint::Production)?;</span>
 <span class="doccomment">//!</span>
-<span class="doccomment">//!     let sending = client.send(payload);</span>
+<span class="doccomment">//!     let response = client.send(payload).await?;</span>
+<span class="doccomment">//!     println!(&quot;Sent: {:?}&quot;, response);</span>
 <span class="doccomment">//!</span>
-<span class="doccomment">//!     tokio::run(lazy(move || {</span>
-<span class="doccomment">//!         sending</span>
-<span class="doccomment">//!             .map(|response| {</span>
-<span class="doccomment">//!                 println!(&quot;Sent: {:?}&quot;, response);</span>
-<span class="doccomment">//!             })</span>
-<span class="doccomment">//!             .map_err(|error| {</span>
-<span class="doccomment">//!                 println!(&quot;Error: {:?}&quot;, error);</span>
-<span class="doccomment">//!            })</span>
-<span class="doccomment">//!     }));</span>
+<span class="doccomment">//!     Ok(())</span>
 <span class="doccomment">//! }</span>
 <span class="doccomment">//! ```</span>
 
@@ -323,7 +298,6 @@
 <span class="kw">pub</span> <span class="kw">use</span> <span class="kw">crate</span>::<span class="ident">client</span>::{
     <span class="ident">Endpoint</span>,
     <span class="ident">Client</span>,
-    <span class="ident">FutureResponse</span>,
 };
 
 <span class="kw">pub</span> <span class="kw">use</span> <span class="kw">crate</span>::<span class="ident">error</span>::<span class="ident">Error</span>;

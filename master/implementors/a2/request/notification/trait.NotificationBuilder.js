@@ -6,5 +6,4 @@ implementors["a2"] = [];
             } else {
                 window.pending_implementors = implementors;
             }
-        
-})()
+        })()

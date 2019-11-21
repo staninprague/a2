@@ -434,63 +434,63 @@
 }
 
 <span class="kw">impl</span> <span class="ident">fmt</span>::<span class="ident">Display</span> <span class="kw">for</span> <span class="ident">ErrorReason</span> {
-    <span class="kw">fn</span> <span class="ident">fmt</span>(<span class="kw-2">&amp;</span><span class="self">self</span>, <span class="ident">f</span>: <span class="kw-2">&amp;</span><span class="kw-2">mut</span> <span class="ident">fmt</span>::<span class="ident">Formatter</span><span class="op">&lt;</span><span class="lifetime">&#39;_</span><span class="op">&gt;</span>) <span class="op">-&gt;</span> <span class="ident">fmt</span>::<span class="prelude-ty">Result</span> {
+    <span class="kw">fn</span> <span class="ident">fmt</span>(<span class="kw-2">&amp;</span><span class="self">self</span>, <span class="ident">f</span>: <span class="kw-2">&amp;</span><span class="kw-2">mut</span> <span class="ident">fmt</span>::<span class="ident">Formatter</span><span class="op">&lt;</span><span class="lifetime">&#39;_</span><span class="op">&gt;</span>) <span class="op">-</span><span class="op">&gt;</span> <span class="ident">fmt</span>::<span class="prelude-ty">Result</span> {
         <span class="kw">let</span> <span class="ident">s</span> <span class="op">=</span> <span class="kw">match</span> <span class="kw-2">*</span><span class="self">self</span> {
-            <span class="ident">ErrorReason</span>::<span class="ident">BadCollapseId</span> <span class="op">=&gt;</span>
+            <span class="ident">ErrorReason</span>::<span class="ident">BadCollapseId</span> <span class="op">=</span><span class="op">&gt;</span>
                 <span class="string">&quot;The collapse identifier exceeds the maximum allowed size.&quot;</span>,
-            <span class="ident">ErrorReason</span>::<span class="ident">BadDeviceToken</span> <span class="op">=&gt;</span>
+            <span class="ident">ErrorReason</span>::<span class="ident">BadDeviceToken</span> <span class="op">=</span><span class="op">&gt;</span>
                 <span class="string">&quot;The specified device token was bad. Verify that the request contains a valid token and that the token matches the environment.&quot;</span>,
-            <span class="ident">ErrorReason</span>::<span class="ident">BadExpirationDate</span> <span class="op">=&gt;</span>
+            <span class="ident">ErrorReason</span>::<span class="ident">BadExpirationDate</span> <span class="op">=</span><span class="op">&gt;</span>
                 <span class="string">&quot;The `apns_expiration` in `NotificationOptions` is bad.&quot;</span>,
-            <span class="ident">ErrorReason</span>::<span class="ident">BadMessageId</span> <span class="op">=&gt;</span>
+            <span class="ident">ErrorReason</span>::<span class="ident">BadMessageId</span> <span class="op">=</span><span class="op">&gt;</span>
                 <span class="string">&quot;The `apns_id` in `NotificationOptions` is bad.&quot;</span>,
-            <span class="ident">ErrorReason</span>::<span class="ident">BadPriority</span> <span class="op">=&gt;</span>
+            <span class="ident">ErrorReason</span>::<span class="ident">BadPriority</span> <span class="op">=</span><span class="op">&gt;</span>
                 <span class="string">&quot;The `apns_priority` in `NotificationOptions` is bad.&quot;</span>,
-            <span class="ident">ErrorReason</span>::<span class="ident">BadTopic</span> <span class="op">=&gt;</span>
+            <span class="ident">ErrorReason</span>::<span class="ident">BadTopic</span> <span class="op">=</span><span class="op">&gt;</span>
                 <span class="string">&quot;The `apns_topic` in `NotificationOptions` is bad.&quot;</span>,
-            <span class="ident">ErrorReason</span>::<span class="ident">DeviceTokenNotForTopic</span> <span class="op">=&gt;</span>
+            <span class="ident">ErrorReason</span>::<span class="ident">DeviceTokenNotForTopic</span> <span class="op">=</span><span class="op">&gt;</span>
                 <span class="string">&quot;The device token does not match the specified topic.&quot;</span>,
-            <span class="ident">ErrorReason</span>::<span class="ident">DuplicateHeaders</span> <span class="op">=&gt;</span>
+            <span class="ident">ErrorReason</span>::<span class="ident">DuplicateHeaders</span> <span class="op">=</span><span class="op">&gt;</span>
                 <span class="string">&quot;One or more headers were repeated.&quot;</span>,
-            <span class="ident">ErrorReason</span>::<span class="ident">IdleTimeout</span> <span class="op">=&gt;</span>
+            <span class="ident">ErrorReason</span>::<span class="ident">IdleTimeout</span> <span class="op">=</span><span class="op">&gt;</span>
                 <span class="string">&quot;Idle time out.&quot;</span>,
-            <span class="ident">ErrorReason</span>::<span class="ident">MissingDeviceToken</span> <span class="op">=&gt;</span>
+            <span class="ident">ErrorReason</span>::<span class="ident">MissingDeviceToken</span> <span class="op">=</span><span class="op">&gt;</span>
                 <span class="string">&quot;The device token is not specified in the payload.&quot;</span>,
-            <span class="ident">ErrorReason</span>::<span class="ident">MissingTopic</span> <span class="op">=&gt;</span>
+            <span class="ident">ErrorReason</span>::<span class="ident">MissingTopic</span> <span class="op">=</span><span class="op">&gt;</span>
                 <span class="string">&quot;The `apns_topic` of the `NotificationOptions` was not specified and was required. The `apns_topic` header is mandatory when the client is connected using the `CertificateConnector` and the included PKCS12 file includes multiple topics, or when using the `TokenConnector`.&quot;</span>,
-            <span class="ident">ErrorReason</span>::<span class="ident">PayloadEmpty</span> <span class="op">=&gt;</span>
+            <span class="ident">ErrorReason</span>::<span class="ident">PayloadEmpty</span> <span class="op">=</span><span class="op">&gt;</span>
                 <span class="string">&quot;The message payload was empty.&quot;</span>,
-            <span class="ident">ErrorReason</span>::<span class="ident">TopicDisallowed</span> <span class="op">=&gt;</span>
+            <span class="ident">ErrorReason</span>::<span class="ident">TopicDisallowed</span> <span class="op">=</span><span class="op">&gt;</span>
                 <span class="string">&quot;Pushing to this topic is not allowed.&quot;</span>,
-            <span class="ident">ErrorReason</span>::<span class="ident">BadCertificate</span> <span class="op">=&gt;</span>
+            <span class="ident">ErrorReason</span>::<span class="ident">BadCertificate</span> <span class="op">=</span><span class="op">&gt;</span>
                 <span class="string">&quot;The certificate was bad.&quot;</span>,
-            <span class="ident">ErrorReason</span>::<span class="ident">BadCertificateEnvironment</span> <span class="op">=&gt;</span>
+            <span class="ident">ErrorReason</span>::<span class="ident">BadCertificateEnvironment</span> <span class="op">=</span><span class="op">&gt;</span>
                 <span class="string">&quot;The client certificate was for the wrong environment.&quot;</span>,
-            <span class="ident">ErrorReason</span>::<span class="ident">ExpiredProviderToken</span> <span class="op">=&gt;</span>
+            <span class="ident">ErrorReason</span>::<span class="ident">ExpiredProviderToken</span> <span class="op">=</span><span class="op">&gt;</span>
                 <span class="string">&quot;The provider token is stale and a new token should be generated.&quot;</span>,
-            <span class="ident">ErrorReason</span>::<span class="ident">Forbidden</span> <span class="op">=&gt;</span>
+            <span class="ident">ErrorReason</span>::<span class="ident">Forbidden</span> <span class="op">=</span><span class="op">&gt;</span>
                 <span class="string">&quot;The specified action is not allowed.&quot;</span>,
-            <span class="ident">ErrorReason</span>::<span class="ident">InvalidProviderToken</span> <span class="op">=&gt;</span>
+            <span class="ident">ErrorReason</span>::<span class="ident">InvalidProviderToken</span> <span class="op">=</span><span class="op">&gt;</span>
                 <span class="string">&quot;The provider token is not valid or the token signature could not be verified.&quot;</span>,
-            <span class="ident">ErrorReason</span>::<span class="ident">MissingProviderToken</span> <span class="op">=&gt;</span>
+            <span class="ident">ErrorReason</span>::<span class="ident">MissingProviderToken</span> <span class="op">=</span><span class="op">&gt;</span>
                 <span class="string">&quot;No provider certificate was used to connect to APNs and Authorization header was missing or no provider token was specified.&quot;</span>,
-            <span class="ident">ErrorReason</span>::<span class="ident">BadPath</span> <span class="op">=&gt;</span>
+            <span class="ident">ErrorReason</span>::<span class="ident">BadPath</span> <span class="op">=</span><span class="op">&gt;</span>
                 <span class="string">&quot;The request path value is bad.&quot;</span>,
-            <span class="ident">ErrorReason</span>::<span class="ident">MethodNotAllowed</span> <span class="op">=&gt;</span>
+            <span class="ident">ErrorReason</span>::<span class="ident">MethodNotAllowed</span> <span class="op">=</span><span class="op">&gt;</span>
                 <span class="string">&quot;The request method was not `POST`.&quot;</span>,
-            <span class="ident">ErrorReason</span>::<span class="ident">Unregistered</span> <span class="op">=&gt;</span>
+            <span class="ident">ErrorReason</span>::<span class="ident">Unregistered</span> <span class="op">=</span><span class="op">&gt;</span>
                 <span class="string">&quot;The device token is inactive for the specified topic. You should stop sending notifications to this token.&quot;</span>,
-            <span class="ident">ErrorReason</span>::<span class="ident">PayloadTooLarge</span> <span class="op">=&gt;</span>
+            <span class="ident">ErrorReason</span>::<span class="ident">PayloadTooLarge</span> <span class="op">=</span><span class="op">&gt;</span>
                 <span class="string">&quot;The message payload was too large (4096 bytes)&quot;</span>,
-            <span class="ident">ErrorReason</span>::<span class="ident">TooManyProviderTokenUpdates</span> <span class="op">=&gt;</span>
+            <span class="ident">ErrorReason</span>::<span class="ident">TooManyProviderTokenUpdates</span> <span class="op">=</span><span class="op">&gt;</span>
                 <span class="string">&quot;The provider token is being updated too often.&quot;</span>,
-            <span class="ident">ErrorReason</span>::<span class="ident">TooManyRequests</span> <span class="op">=&gt;</span>
+            <span class="ident">ErrorReason</span>::<span class="ident">TooManyRequests</span> <span class="op">=</span><span class="op">&gt;</span>
                 <span class="string">&quot;Too many requests were made consecutively to the same device token.&quot;</span>,
-            <span class="ident">ErrorReason</span>::<span class="ident">InternalServerError</span> <span class="op">=&gt;</span>
+            <span class="ident">ErrorReason</span>::<span class="ident">InternalServerError</span> <span class="op">=</span><span class="op">&gt;</span>
                 <span class="string">&quot;An internal server error occurred.&quot;</span>,
-            <span class="ident">ErrorReason</span>::<span class="ident">ServiceUnavailable</span> <span class="op">=&gt;</span>
+            <span class="ident">ErrorReason</span>::<span class="ident">ServiceUnavailable</span> <span class="op">=</span><span class="op">&gt;</span>
                 <span class="string">&quot;The service is unavailable.&quot;</span>,
-            <span class="ident">ErrorReason</span>::<span class="ident">Shutdown</span> <span class="op">=&gt;</span>
+            <span class="ident">ErrorReason</span>::<span class="ident">Shutdown</span> <span class="op">=</span><span class="op">&gt;</span>
                 <span class="string">&quot;The server is shutting down.&quot;</span>,
         };
 
@@ -570,8 +570,8 @@
 
         <span class="kw">for</span> <span class="ident">error</span> <span class="kw">in</span> <span class="ident">errors</span>.<span class="ident">into_iter</span>() {
             <span class="kw">let</span> <span class="ident">response_data</span> <span class="op">=</span> <span class="kw">match</span> <span class="ident">error</span>.<span class="number">2</span> {
-                <span class="prelude-val">None</span> <span class="op">=&gt;</span> <span class="macro">json</span><span class="macro">!</span>({<span class="string">&quot;reason&quot;</span>: <span class="ident">error</span>.<span class="number">1</span>}),
-                <span class="prelude-val">Some</span>(<span class="ident">ts</span>) <span class="op">=&gt;</span> <span class="macro">json</span><span class="macro">!</span>({<span class="string">&quot;reason&quot;</span>: <span class="ident">error</span>.<span class="number">1</span>, <span class="string">&quot;timestamp&quot;</span>: <span class="ident">ts</span>}),
+                <span class="prelude-val">None</span> <span class="op">=</span><span class="op">&gt;</span> <span class="macro">json</span><span class="macro">!</span>({<span class="string">&quot;reason&quot;</span>: <span class="ident">error</span>.<span class="number">1</span>}),
+                <span class="prelude-val">Some</span>(<span class="ident">ts</span>) <span class="op">=</span><span class="op">&gt;</span> <span class="macro">json</span><span class="macro">!</span>({<span class="string">&quot;reason&quot;</span>: <span class="ident">error</span>.<span class="number">1</span>, <span class="string">&quot;timestamp&quot;</span>: <span class="ident">ts</span>}),
             };
 
             <span class="kw">let</span> <span class="ident">response_string</span> <span class="op">=</span> <span class="ident">serde_json</span>::<span class="ident">to_string</span>(<span class="kw-2">&amp;</span><span class="ident">response_data</span>).<span class="ident">unwrap</span>();
@@ -579,11 +579,11 @@
             <span class="kw">let</span> <span class="ident">response_body</span>: <span class="ident">ErrorBody</span> <span class="op">=</span> <span class="ident">serde_json</span>::<span class="ident">from_str</span>(<span class="kw-2">&amp;</span><span class="ident">response_string</span>).<span class="ident">unwrap</span>();
 
             <span class="kw">let</span> <span class="ident">expected_body</span> <span class="op">=</span> <span class="kw">match</span> <span class="ident">error</span>.<span class="number">2</span> {
-                <span class="prelude-val">None</span> <span class="op">=&gt;</span> <span class="ident">ErrorBody</span> {
+                <span class="prelude-val">None</span> <span class="op">=</span><span class="op">&gt;</span> <span class="ident">ErrorBody</span> {
                     <span class="ident">reason</span>: <span class="ident">error</span>.<span class="number">0</span>,
                     <span class="ident">timestamp</span>: <span class="prelude-val">None</span>,
                 },
-                <span class="prelude-val">Some</span>(<span class="ident">ts</span>) <span class="op">=&gt;</span> <span class="ident">ErrorBody</span> {
+                <span class="prelude-val">Some</span>(<span class="ident">ts</span>) <span class="op">=</span><span class="op">&gt;</span> <span class="ident">ErrorBody</span> {
                     <span class="ident">reason</span>: <span class="ident">error</span>.<span class="number">0</span>,
                     <span class="ident">timestamp</span>: <span class="prelude-val">Some</span>(<span class="ident">ts</span>),
                 },

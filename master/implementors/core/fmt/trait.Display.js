@@ -6,5 +6,4 @@ implementors["a2"] = [{text:"impl <a class=\"trait\" href=\"https://doc.rust-lan
             } else {
                 window.pending_implementors = implementors;
             }
-        
-})()
+        })()

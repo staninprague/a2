@@ -208,7 +208,7 @@
         <span class="kw-2">&amp;</span><span class="kw-2">mut</span> <span class="self">self</span>,
         <span class="ident">root_key</span>: <span class="kw-2">&amp;</span><span class="lifetime">&#39;a</span> <span class="ident">str</span>,
         <span class="ident">data</span>: <span class="kw-2">&amp;</span><span class="kw">dyn</span> <span class="ident">Serialize</span>,
-    ) <span class="op">-&gt;</span> <span class="prelude-ty">Result</span><span class="op">&lt;</span><span class="kw-2">&amp;</span><span class="kw-2">mut</span> <span class="self">Self</span>, <span class="ident">Error</span><span class="op">&gt;</span>
+    ) <span class="op">-</span><span class="op">&gt;</span> <span class="prelude-ty">Result</span><span class="op">&lt;</span><span class="kw-2">&amp;</span><span class="kw-2">mut</span> <span class="self">Self</span>, <span class="ident">Error</span><span class="op">&gt;</span>
     <span class="kw">where</span>
     {
         <span class="self">self</span>.<span class="ident">data</span>.<span class="ident">insert</span>(<span class="ident">root_key</span>, <span class="ident">serde_json</span>::<span class="ident">to_value</span>(<span class="ident">data</span>)<span class="question-mark">?</span>);
@@ -218,7 +218,7 @@
 
     <span class="doccomment">/// Combine the APS payload and the custom data to a final payload JSON.</span>
     <span class="doccomment">/// Returns an error if serialization fails.</span>
-    <span class="kw">pub</span> <span class="kw">fn</span> <span class="ident">to_json_string</span>(<span class="kw-2">mut</span> <span class="self">self</span>) <span class="op">-&gt;</span> <span class="prelude-ty">Result</span><span class="op">&lt;</span><span class="ident">String</span>, <span class="ident">Error</span><span class="op">&gt;</span> {
+    <span class="kw">pub</span> <span class="kw">fn</span> <span class="ident">to_json_string</span>(<span class="kw-2">mut</span> <span class="self">self</span>) <span class="op">-</span><span class="op">&gt;</span> <span class="prelude-ty">Result</span><span class="op">&lt;</span><span class="ident">String</span>, <span class="ident">Error</span><span class="op">&gt;</span> {
         <span class="kw">let</span> <span class="ident">aps_data</span> <span class="op">=</span> <span class="ident">serde_json</span>::<span class="ident">to_value</span>(<span class="kw-2">&amp;</span><span class="self">self</span>.<span class="ident">aps</span>)<span class="question-mark">?</span>;
 
         <span class="self">self</span>.<span class="ident">data</span>.<span class="ident">insert</span>(<span class="string">&quot;aps&quot;</span>, <span class="ident">aps_data</span>);
@@ -233,7 +233,7 @@
 <span class="kw">pub</span> <span class="kw">struct</span> <span class="ident">APS</span><span class="op">&lt;</span><span class="lifetime">&#39;a</span><span class="op">&gt;</span> {
     <span class="doccomment">/// The notification content. Can be empty for silent notifications.</span>
     <span class="attribute">#[<span class="ident">serde</span>(<span class="ident">skip_serializing_if</span> <span class="op">=</span> <span class="string">&quot;Option::is_none&quot;</span>)]</span>
-    <span class="kw">pub</span> <span class="ident">alert</span>: <span class="prelude-ty">Option</span><span class="op">&lt;</span><span class="ident">APSAlert</span><span class="op">&lt;</span><span class="lifetime">&#39;a</span><span class="op">&gt;&gt;</span>,
+    <span class="kw">pub</span> <span class="ident">alert</span>: <span class="prelude-ty">Option</span><span class="op">&lt;</span><span class="ident">APSAlert</span><span class="op">&lt;</span><span class="lifetime">&#39;a</span><span class="op">&gt;</span><span class="op">&gt;</span>,
 
     <span class="doccomment">/// A number shown on top of the app icon.</span>
     <span class="attribute">#[<span class="ident">serde</span>(<span class="ident">skip_serializing_if</span> <span class="op">=</span> <span class="string">&quot;Option::is_none&quot;</span>)]</span>
