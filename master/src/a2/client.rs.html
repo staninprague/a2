@@ -515,6 +515,9 @@
 <span id="515">515</span>
 <span id="516">516</span>
 <span id="517">517</span>
+<span id="518">518</span>
+<span id="519">519</span>
+<span id="520">520</span>
 </pre><div class="example-wrap"><pre class="rust ">
 <span class="doccomment">//! The client module for sending requests and parsing responses</span>
 
@@ -536,6 +539,7 @@
 <span class="kw">use</span> <span class="ident">serde_json</span>;
 <span class="kw">use</span> <span class="ident">std</span>::{<span class="ident">fmt</span>, <span class="ident">str</span>};
 <span class="kw">use</span> <span class="ident">std</span>::<span class="ident">time</span>::<span class="ident">Duration</span>;
+<span class="kw">use</span> <span class="ident">std</span>::<span class="ident">future</span>::<span class="ident">Future</span>;
 <span class="kw">use</span> <span class="ident">openssl</span>::<span class="ident">pkcs12</span>::<span class="ident">Pkcs12</span>;
 <span class="kw">use</span> <span class="ident">std</span>::<span class="ident">io</span>::<span class="ident">Read</span>;
 
@@ -639,52 +643,53 @@
     <span class="doccomment">/// Send a notification payload.</span>
     <span class="doccomment">///</span>
     <span class="doccomment">/// See [ErrorReason](enum.ErrorReason.html) for possible errors.</span>
-    <span class="kw">pub</span> <span class="kw">async</span> <span class="kw">fn</span> <span class="ident">send</span><span class="op">&lt;</span><span class="lifetime">&#39;a</span><span class="op">&gt;</span>(<span class="kw-2">&amp;</span><span class="self">self</span>, <span class="ident">payload</span>: <span class="ident">Payload</span><span class="op">&lt;</span><span class="lifetime">&#39;a</span><span class="op">&gt;</span>) <span class="op">-</span><span class="op">&gt;</span> <span class="prelude-ty">Result</span><span class="op">&lt;</span><span class="ident">Response</span>, <span class="ident">Error</span><span class="op">&gt;</span> {
-        <span class="kw">let</span> <span class="ident">request</span> <span class="op">=</span> <span class="self">self</span>.<span class="ident">build_request</span>(<span class="ident">payload</span>).<span class="kw">await</span>;
-        <span class="kw">let</span> <span class="ident">path</span> <span class="op">=</span> <span class="macro">format</span><span class="macro">!</span>(<span class="string">&quot;{}&quot;</span>, <span class="ident">request</span>.<span class="ident">uri</span>());
+    <span class="kw">pub</span> <span class="kw">fn</span> <span class="ident">send</span>(<span class="kw-2">&amp;</span><span class="self">self</span>, <span class="ident">payload</span>: <span class="ident">Payload</span><span class="op">&lt;</span><span class="lifetime">&#39;_</span><span class="op">&gt;</span>) <span class="op">-</span><span class="op">&gt;</span> <span class="kw">impl</span> <span class="ident">Future</span><span class="op">&lt;</span><span class="ident">Output</span> <span class="op">=</span> <span class="prelude-ty">Result</span><span class="op">&lt;</span><span class="ident">Response</span>, <span class="ident">Error</span><span class="op">&gt;</span><span class="op">&gt;</span> <span class="op">+</span> <span class="lifetime">&#39;static</span> {
+        <span class="kw">let</span> <span class="ident">request</span> <span class="op">=</span> <span class="self">self</span>.<span class="ident">build_request</span>(<span class="ident">payload</span>);
+        <span class="kw">let</span> <span class="ident">requesting</span> <span class="op">=</span> <span class="self">self</span>.<span class="ident">http_client</span>.<span class="ident">request</span>(<span class="ident">request</span>);
 
-        <span class="kw">let</span> <span class="ident">response</span> <span class="op">=</span> <span class="self">self</span>.<span class="ident">http_client</span>.<span class="ident">request</span>(<span class="ident">request</span>).<span class="kw">await</span><span class="question-mark">?</span>;
-        <span class="macro">trace</span><span class="macro">!</span>(<span class="string">&quot;Client::call got response status {} from ({:?})&quot;</span>, <span class="ident">response</span>.<span class="ident">status</span>(), <span class="ident">path</span>);
+        <span class="kw">async</span> <span class="kw">move</span> {
+            <span class="kw">let</span> <span class="ident">response</span> <span class="op">=</span> <span class="ident">requesting</span>.<span class="kw">await</span><span class="question-mark">?</span>;
 
-        <span class="kw">let</span> <span class="ident">apns_id</span> <span class="op">=</span> <span class="ident">response</span>
-            .<span class="ident">headers</span>()
-            .<span class="ident">get</span>(<span class="string">&quot;apns-id&quot;</span>)
-            .<span class="ident">and_then</span>(<span class="op">|</span><span class="ident">s</span><span class="op">|</span> <span class="ident">s</span>.<span class="ident">to_str</span>().<span class="ident">ok</span>())
-            .<span class="ident">map</span>(<span class="op">|</span><span class="ident">id</span><span class="op">|</span> <span class="ident">String</span>::<span class="ident">from</span>(<span class="ident">id</span>));
+            <span class="kw">let</span> <span class="ident">apns_id</span> <span class="op">=</span> <span class="ident">response</span>
+                .<span class="ident">headers</span>()
+                .<span class="ident">get</span>(<span class="string">&quot;apns-id&quot;</span>)
+                .<span class="ident">and_then</span>(<span class="op">|</span><span class="ident">s</span><span class="op">|</span> <span class="ident">s</span>.<span class="ident">to_str</span>().<span class="ident">ok</span>())
+                .<span class="ident">map</span>(<span class="op">|</span><span class="ident">id</span><span class="op">|</span> <span class="ident">String</span>::<span class="ident">from</span>(<span class="ident">id</span>));
 
-        <span class="kw">match</span> <span class="ident">response</span>.<span class="ident">status</span>() {
-            <span class="ident">StatusCode</span>::<span class="ident">OK</span> <span class="op">=</span><span class="op">&gt;</span> {
-                <span class="prelude-val">Ok</span>(<span class="ident">Response</span> {
-                    <span class="ident">apns_id</span>,
-                    <span class="ident">error</span>: <span class="prelude-val">None</span>,
-                    <span class="ident">code</span>: <span class="ident">response</span>.<span class="ident">status</span>().<span class="ident">as_u16</span>(),
-                })
-            },
-            <span class="ident">status</span> <span class="op">=</span><span class="op">&gt;</span> {
-                <span class="kw">let</span> <span class="ident">content_length</span>: <span class="ident">usize</span> <span class="op">=</span> <span class="ident">response</span>
-                    .<span class="ident">headers</span>()
-                    .<span class="ident">get</span>(<span class="ident">CONTENT_LENGTH</span>)
-                    .<span class="ident">and_then</span>(<span class="op">|</span><span class="ident">s</span><span class="op">|</span> <span class="ident">s</span>.<span class="ident">to_str</span>().<span class="ident">ok</span>())
-                    .<span class="ident">and_then</span>(<span class="op">|</span><span class="ident">s</span><span class="op">|</span> <span class="ident">s</span>.<span class="ident">parse</span>().<span class="ident">ok</span>())
-                    .<span class="ident">unwrap_or</span>(<span class="number">0</span>);
+            <span class="kw">match</span> <span class="ident">response</span>.<span class="ident">status</span>() {
+                <span class="ident">StatusCode</span>::<span class="ident">OK</span> <span class="op">=</span><span class="op">&gt;</span> {
+                    <span class="prelude-val">Ok</span>(<span class="ident">Response</span> {
+                        <span class="ident">apns_id</span>,
+                        <span class="ident">error</span>: <span class="prelude-val">None</span>,
+                        <span class="ident">code</span>: <span class="ident">response</span>.<span class="ident">status</span>().<span class="ident">as_u16</span>(),
+                    })
+                },
+                <span class="ident">status</span> <span class="op">=</span><span class="op">&gt;</span> {
+                    <span class="kw">let</span> <span class="ident">content_length</span>: <span class="ident">usize</span> <span class="op">=</span> <span class="ident">response</span>
+                        .<span class="ident">headers</span>()
+                        .<span class="ident">get</span>(<span class="ident">CONTENT_LENGTH</span>)
+                        .<span class="ident">and_then</span>(<span class="op">|</span><span class="ident">s</span><span class="op">|</span> <span class="ident">s</span>.<span class="ident">to_str</span>().<span class="ident">ok</span>())
+                        .<span class="ident">and_then</span>(<span class="op">|</span><span class="ident">s</span><span class="op">|</span> <span class="ident">s</span>.<span class="ident">parse</span>().<span class="ident">ok</span>())
+                        .<span class="ident">unwrap_or</span>(<span class="number">0</span>);
 
-                <span class="kw">let</span> <span class="kw-2">mut</span> <span class="ident">body</span>: <span class="ident">Vec</span><span class="op">&lt;</span><span class="ident">u8</span><span class="op">&gt;</span> <span class="op">=</span> <span class="ident">Vec</span>::<span class="ident">with_capacity</span>(<span class="ident">content_length</span>);
-                <span class="kw">let</span> <span class="kw-2">mut</span> <span class="ident">chunks</span> <span class="op">=</span> <span class="ident">response</span>.<span class="ident">into_body</span>();
+                    <span class="kw">let</span> <span class="kw-2">mut</span> <span class="ident">body</span>: <span class="ident">Vec</span><span class="op">&lt;</span><span class="ident">u8</span><span class="op">&gt;</span> <span class="op">=</span> <span class="ident">Vec</span>::<span class="ident">with_capacity</span>(<span class="ident">content_length</span>);
+                    <span class="kw">let</span> <span class="kw-2">mut</span> <span class="ident">chunks</span> <span class="op">=</span> <span class="ident">response</span>.<span class="ident">into_body</span>();
 
-                <span class="kw">while</span> <span class="kw">let</span> <span class="prelude-val">Some</span>(<span class="ident">chunk</span>) <span class="op">=</span> <span class="ident">chunks</span>.<span class="ident">next</span>().<span class="kw">await</span> {
-                    <span class="ident">body</span>.<span class="ident">extend_from_slice</span>(<span class="kw-2">&amp;</span><span class="ident">chunk</span><span class="question-mark">?</span>);
+                    <span class="kw">while</span> <span class="kw">let</span> <span class="prelude-val">Some</span>(<span class="ident">chunk</span>) <span class="op">=</span> <span class="ident">chunks</span>.<span class="ident">next</span>().<span class="kw">await</span> {
+                        <span class="ident">body</span>.<span class="ident">extend_from_slice</span>(<span class="kw-2">&amp;</span><span class="ident">chunk</span><span class="question-mark">?</span>);
+                    }
+
+                    <span class="prelude-val">Err</span>(<span class="ident">ResponseError</span>(<span class="ident">Response</span> {
+                        <span class="ident">apns_id</span>,
+                        <span class="ident">error</span>: <span class="ident">serde_json</span>::<span class="ident">from_slice</span>(<span class="kw-2">&amp;</span><span class="ident">body</span>).<span class="ident">ok</span>(),
+                        <span class="ident">code</span>: <span class="ident">status</span>.<span class="ident">as_u16</span>(),
+                    }))
                 }
-
-                <span class="prelude-val">Err</span>(<span class="ident">ResponseError</span>(<span class="ident">Response</span> {
-                    <span class="ident">apns_id</span>,
-                    <span class="ident">error</span>: <span class="ident">serde_json</span>::<span class="ident">from_slice</span>(<span class="kw-2">&amp;</span><span class="ident">body</span>).<span class="ident">ok</span>(),
-                    <span class="ident">code</span>: <span class="ident">status</span>.<span class="ident">as_u16</span>(),
-                }))
             }
         }
     }
 
-    <span class="kw">async</span> <span class="kw">fn</span> <span class="ident">build_request</span>(<span class="kw-2">&amp;</span><span class="self">self</span>, <span class="ident">payload</span>: <span class="ident">Payload</span><span class="op">&lt;</span><span class="lifetime">&#39;_</span><span class="op">&gt;</span>) <span class="op">-</span><span class="op">&gt;</span> <span class="ident">hyper</span>::<span class="ident">Request</span><span class="op">&lt;</span><span class="ident">Body</span><span class="op">&gt;</span> {
+    <span class="kw">fn</span> <span class="ident">build_request</span>(<span class="kw-2">&amp;</span><span class="self">self</span>, <span class="ident">payload</span>: <span class="ident">Payload</span><span class="op">&lt;</span><span class="lifetime">&#39;_</span><span class="op">&gt;</span>) <span class="op">-</span><span class="op">&gt;</span> <span class="ident">hyper</span>::<span class="ident">Request</span><span class="op">&lt;</span><span class="ident">Body</span><span class="op">&gt;</span> {
         <span class="kw">let</span> <span class="ident">path</span> <span class="op">=</span> <span class="macro">format</span><span class="macro">!</span>(
             <span class="string">&quot;https://{}/3/device/{}&quot;</span>,
             <span class="self">self</span>.<span class="ident">endpoint</span>, <span class="ident">payload</span>.<span class="ident">device_token</span>
@@ -713,7 +718,7 @@
         <span class="kw">if</span> <span class="kw">let</span> <span class="prelude-val">Some</span>(<span class="kw-2">ref</span> <span class="ident">signer</span>) <span class="op">=</span> <span class="self">self</span>.<span class="ident">signer</span> {
             <span class="kw">let</span> <span class="ident">auth</span> <span class="op">=</span> <span class="ident">signer</span>.<span class="ident">with_signature</span>(<span class="op">|</span><span class="ident">signature</span><span class="op">|</span> {
                 <span class="macro">format</span><span class="macro">!</span>(<span class="string">&quot;Bearer {}&quot;</span>, <span class="ident">signature</span>)
-            }).<span class="kw">await</span>.<span class="ident">unwrap</span>();
+            }).<span class="ident">unwrap</span>();
 
             <span class="ident">builder</span> <span class="op">=</span> <span class="ident">builder</span>.<span class="ident">header</span>(<span class="ident">AUTHORIZATION</span>, <span class="ident">auth</span>.<span class="ident">as_bytes</span>());
         }
@@ -745,54 +750,54 @@
         -----END PRIVATE KEY-----&quot;</span>
     );
 
-    <span class="attribute">#[<span class="ident">tokio</span>::<span class="ident">test</span>]</span>
-    <span class="kw">async</span> <span class="kw">fn</span> <span class="ident">test_production_request_uri</span>() {
+    <span class="attribute">#[<span class="ident">test</span>]</span>
+    <span class="kw">fn</span> <span class="ident">test_production_request_uri</span>() {
         <span class="kw">let</span> <span class="ident">builder</span> <span class="op">=</span> <span class="ident">PlainNotificationBuilder</span>::<span class="ident">new</span>(<span class="string">&quot;test&quot;</span>);
         <span class="kw">let</span> <span class="ident">payload</span> <span class="op">=</span> <span class="ident">builder</span>.<span class="ident">build</span>(<span class="string">&quot;a_test_id&quot;</span>, <span class="ident">Default</span>::<span class="ident">default</span>());
         <span class="kw">let</span> <span class="ident">client</span> <span class="op">=</span> <span class="ident">Client</span>::<span class="ident">new</span>(<span class="ident">AlpnConnector</span>::<span class="ident">new</span>(), <span class="prelude-val">None</span>, <span class="ident">Endpoint</span>::<span class="ident">Production</span>);
-        <span class="kw">let</span> <span class="ident">request</span> <span class="op">=</span> <span class="ident">client</span>.<span class="ident">build_request</span>(<span class="ident">payload</span>).<span class="kw">await</span>;
+        <span class="kw">let</span> <span class="ident">request</span> <span class="op">=</span> <span class="ident">client</span>.<span class="ident">build_request</span>(<span class="ident">payload</span>);
         <span class="kw">let</span> <span class="ident">uri</span> <span class="op">=</span> <span class="macro">format</span><span class="macro">!</span>(<span class="string">&quot;{}&quot;</span>, <span class="ident">request</span>.<span class="ident">uri</span>());
 
         <span class="macro">assert_eq</span><span class="macro">!</span>(<span class="string">&quot;https://api.push.apple.com/3/device/a_test_id&quot;</span>, <span class="kw-2">&amp;</span><span class="ident">uri</span>);
     }
 
-    <span class="attribute">#[<span class="ident">tokio</span>::<span class="ident">test</span>]</span>
-    <span class="kw">async</span> <span class="kw">fn</span> <span class="ident">test_sandbox_request_uri</span>() {
+    <span class="attribute">#[<span class="ident">test</span>]</span>
+    <span class="kw">fn</span> <span class="ident">test_sandbox_request_uri</span>() {
         <span class="kw">let</span> <span class="ident">builder</span> <span class="op">=</span> <span class="ident">PlainNotificationBuilder</span>::<span class="ident">new</span>(<span class="string">&quot;test&quot;</span>);
         <span class="kw">let</span> <span class="ident">payload</span> <span class="op">=</span> <span class="ident">builder</span>.<span class="ident">build</span>(<span class="string">&quot;a_test_id&quot;</span>, <span class="ident">Default</span>::<span class="ident">default</span>());
         <span class="kw">let</span> <span class="ident">client</span> <span class="op">=</span> <span class="ident">Client</span>::<span class="ident">new</span>(<span class="ident">AlpnConnector</span>::<span class="ident">new</span>(), <span class="prelude-val">None</span>, <span class="ident">Endpoint</span>::<span class="ident">Sandbox</span>);
-        <span class="kw">let</span> <span class="ident">request</span> <span class="op">=</span> <span class="ident">client</span>.<span class="ident">build_request</span>(<span class="ident">payload</span>).<span class="kw">await</span>;
+        <span class="kw">let</span> <span class="ident">request</span> <span class="op">=</span> <span class="ident">client</span>.<span class="ident">build_request</span>(<span class="ident">payload</span>);
         <span class="kw">let</span> <span class="ident">uri</span> <span class="op">=</span> <span class="macro">format</span><span class="macro">!</span>(<span class="string">&quot;{}&quot;</span>, <span class="ident">request</span>.<span class="ident">uri</span>());
 
         <span class="macro">assert_eq</span><span class="macro">!</span>(<span class="string">&quot;https://api.development.push.apple.com/3/device/a_test_id&quot;</span>, <span class="kw-2">&amp;</span><span class="ident">uri</span>);
     }
 
-    <span class="attribute">#[<span class="ident">tokio</span>::<span class="ident">test</span>]</span>
-    <span class="kw">async</span> <span class="kw">fn</span> <span class="ident">test_request_method</span>() {
+    <span class="attribute">#[<span class="ident">test</span>]</span>
+    <span class="kw">fn</span> <span class="ident">test_request_method</span>() {
         <span class="kw">let</span> <span class="ident">builder</span> <span class="op">=</span> <span class="ident">PlainNotificationBuilder</span>::<span class="ident">new</span>(<span class="string">&quot;test&quot;</span>);
         <span class="kw">let</span> <span class="ident">payload</span> <span class="op">=</span> <span class="ident">builder</span>.<span class="ident">build</span>(<span class="string">&quot;a_test_id&quot;</span>, <span class="ident">Default</span>::<span class="ident">default</span>());
         <span class="kw">let</span> <span class="ident">client</span> <span class="op">=</span> <span class="ident">Client</span>::<span class="ident">new</span>(<span class="ident">AlpnConnector</span>::<span class="ident">new</span>(), <span class="prelude-val">None</span>, <span class="ident">Endpoint</span>::<span class="ident">Production</span>);
-        <span class="kw">let</span> <span class="ident">request</span> <span class="op">=</span> <span class="ident">client</span>.<span class="ident">build_request</span>(<span class="ident">payload</span>).<span class="kw">await</span>;
+        <span class="kw">let</span> <span class="ident">request</span> <span class="op">=</span> <span class="ident">client</span>.<span class="ident">build_request</span>(<span class="ident">payload</span>);
 
         <span class="macro">assert_eq</span><span class="macro">!</span>(<span class="kw-2">&amp;</span><span class="ident">Method</span>::<span class="ident">POST</span>, <span class="ident">request</span>.<span class="ident">method</span>());
     }
 
-    <span class="attribute">#[<span class="ident">tokio</span>::<span class="ident">test</span>]</span>
-    <span class="kw">async</span> <span class="kw">fn</span> <span class="ident">test_request_content_type</span>() {
+    <span class="attribute">#[<span class="ident">test</span>]</span>
+    <span class="kw">fn</span> <span class="ident">test_request_content_type</span>() {
         <span class="kw">let</span> <span class="ident">builder</span> <span class="op">=</span> <span class="ident">PlainNotificationBuilder</span>::<span class="ident">new</span>(<span class="string">&quot;test&quot;</span>);
         <span class="kw">let</span> <span class="ident">payload</span> <span class="op">=</span> <span class="ident">builder</span>.<span class="ident">build</span>(<span class="string">&quot;a_test_id&quot;</span>, <span class="ident">Default</span>::<span class="ident">default</span>());
         <span class="kw">let</span> <span class="ident">client</span> <span class="op">=</span> <span class="ident">Client</span>::<span class="ident">new</span>(<span class="ident">AlpnConnector</span>::<span class="ident">new</span>(), <span class="prelude-val">None</span>, <span class="ident">Endpoint</span>::<span class="ident">Production</span>);
-        <span class="kw">let</span> <span class="ident">request</span> <span class="op">=</span> <span class="ident">client</span>.<span class="ident">build_request</span>(<span class="ident">payload</span>).<span class="kw">await</span>;
+        <span class="kw">let</span> <span class="ident">request</span> <span class="op">=</span> <span class="ident">client</span>.<span class="ident">build_request</span>(<span class="ident">payload</span>);
 
         <span class="macro">assert_eq</span><span class="macro">!</span>(<span class="string">&quot;application/json&quot;</span>, <span class="ident">request</span>.<span class="ident">headers</span>().<span class="ident">get</span>(<span class="ident">CONTENT_TYPE</span>).<span class="ident">unwrap</span>());
     }
 
-    <span class="attribute">#[<span class="ident">tokio</span>::<span class="ident">test</span>]</span>
-    <span class="kw">async</span> <span class="kw">fn</span> <span class="ident">test_request_content_length</span>() {
+    <span class="attribute">#[<span class="ident">test</span>]</span>
+    <span class="kw">fn</span> <span class="ident">test_request_content_length</span>() {
         <span class="kw">let</span> <span class="ident">builder</span> <span class="op">=</span> <span class="ident">PlainNotificationBuilder</span>::<span class="ident">new</span>(<span class="string">&quot;test&quot;</span>);
         <span class="kw">let</span> <span class="ident">payload</span> <span class="op">=</span> <span class="ident">builder</span>.<span class="ident">build</span>(<span class="string">&quot;a_test_id&quot;</span>, <span class="ident">Default</span>::<span class="ident">default</span>());
         <span class="kw">let</span> <span class="ident">client</span> <span class="op">=</span> <span class="ident">Client</span>::<span class="ident">new</span>(<span class="ident">AlpnConnector</span>::<span class="ident">new</span>(), <span class="prelude-val">None</span>, <span class="ident">Endpoint</span>::<span class="ident">Production</span>);
-        <span class="kw">let</span> <span class="ident">request</span> <span class="op">=</span> <span class="ident">client</span>.<span class="ident">build_request</span>(<span class="ident">payload</span>.<span class="ident">clone</span>()).<span class="kw">await</span>;
+        <span class="kw">let</span> <span class="ident">request</span> <span class="op">=</span> <span class="ident">client</span>.<span class="ident">build_request</span>(<span class="ident">payload</span>.<span class="ident">clone</span>());
         <span class="kw">let</span> <span class="ident">payload_json</span> <span class="op">=</span> <span class="ident">payload</span>.<span class="ident">to_json_string</span>().<span class="ident">unwrap</span>();
         <span class="kw">let</span> <span class="ident">content_length</span> <span class="op">=</span> <span class="ident">request</span>.<span class="ident">headers</span>().<span class="ident">get</span>(<span class="ident">CONTENT_LENGTH</span>).<span class="ident">unwrap</span>().<span class="ident">to_str</span>().<span class="ident">unwrap</span>();
 
@@ -802,40 +807,41 @@
         );
     }
 
-    <span class="attribute">#[<span class="ident">tokio</span>::<span class="ident">test</span>]</span>
-    <span class="kw">async</span> <span class="kw">fn</span> <span class="ident">test_request_authorization_with_no_signer</span>() {
+    <span class="attribute">#[<span class="ident">test</span>]</span>
+    <span class="kw">fn</span> <span class="ident">test_request_authorization_with_no_signer</span>() {
         <span class="kw">let</span> <span class="ident">builder</span> <span class="op">=</span> <span class="ident">PlainNotificationBuilder</span>::<span class="ident">new</span>(<span class="string">&quot;test&quot;</span>);
         <span class="kw">let</span> <span class="ident">payload</span> <span class="op">=</span> <span class="ident">builder</span>.<span class="ident">build</span>(<span class="string">&quot;a_test_id&quot;</span>, <span class="ident">Default</span>::<span class="ident">default</span>());
         <span class="kw">let</span> <span class="ident">client</span> <span class="op">=</span> <span class="ident">Client</span>::<span class="ident">new</span>(<span class="ident">AlpnConnector</span>::<span class="ident">new</span>(), <span class="prelude-val">None</span>, <span class="ident">Endpoint</span>::<span class="ident">Production</span>);
-        <span class="kw">let</span> <span class="ident">request</span> <span class="op">=</span> <span class="ident">client</span>.<span class="ident">build_request</span>(<span class="ident">payload</span>).<span class="kw">await</span>;
+        <span class="kw">let</span> <span class="ident">request</span> <span class="op">=</span> <span class="ident">client</span>.<span class="ident">build_request</span>(<span class="ident">payload</span>);
 
         <span class="macro">assert_eq</span><span class="macro">!</span>(<span class="prelude-val">None</span>, <span class="ident">request</span>.<span class="ident">headers</span>().<span class="ident">get</span>(<span class="ident">AUTHORIZATION</span>));
     }
 
-    <span class="attribute">#[<span class="ident">tokio</span>::<span class="ident">test</span>]</span>
-    <span class="kw">async</span> <span class="kw">fn</span> <span class="ident">test_request_authorization_with_a_signer</span>() {
+    <span class="attribute">#[<span class="ident">test</span>]</span>
+    <span class="kw">fn</span> <span class="ident">test_request_authorization_with_a_signer</span>() {
         <span class="kw">let</span> <span class="ident">signer</span> <span class="op">=</span> <span class="ident">Signer</span>::<span class="ident">new</span>(<span class="ident">PRIVATE_KEY</span>.<span class="ident">as_bytes</span>(), <span class="string">&quot;89AFRD1X22&quot;</span>, <span class="string">&quot;ASDFQWERTY&quot;</span>, <span class="ident">Duration</span>::<span class="ident">from_secs</span>(<span class="number">100</span>)).<span class="ident">unwrap</span>();
+
         <span class="kw">let</span> <span class="ident">builder</span> <span class="op">=</span> <span class="ident">PlainNotificationBuilder</span>::<span class="ident">new</span>(<span class="string">&quot;test&quot;</span>);
         <span class="kw">let</span> <span class="ident">payload</span> <span class="op">=</span> <span class="ident">builder</span>.<span class="ident">build</span>(<span class="string">&quot;a_test_id&quot;</span>, <span class="ident">Default</span>::<span class="ident">default</span>());
         <span class="kw">let</span> <span class="ident">client</span> <span class="op">=</span> <span class="ident">Client</span>::<span class="ident">new</span>(<span class="ident">AlpnConnector</span>::<span class="ident">new</span>(), <span class="prelude-val">Some</span>(<span class="ident">signer</span>), <span class="ident">Endpoint</span>::<span class="ident">Production</span>);
-        <span class="kw">let</span> <span class="ident">request</span> <span class="op">=</span> <span class="ident">client</span>.<span class="ident">build_request</span>(<span class="ident">payload</span>).<span class="kw">await</span>;
+        <span class="kw">let</span> <span class="ident">request</span> <span class="op">=</span> <span class="ident">client</span>.<span class="ident">build_request</span>(<span class="ident">payload</span>);
 
         <span class="macro">assert_ne</span><span class="macro">!</span>(<span class="prelude-val">None</span>, <span class="ident">request</span>.<span class="ident">headers</span>().<span class="ident">get</span>(<span class="ident">AUTHORIZATION</span>));
     }
 
-    <span class="attribute">#[<span class="ident">tokio</span>::<span class="ident">test</span>]</span>
-    <span class="kw">async</span> <span class="kw">fn</span> <span class="ident">test_request_with_default_priority</span>() {
+    <span class="attribute">#[<span class="ident">test</span>]</span>
+    <span class="kw">fn</span> <span class="ident">test_request_with_default_priority</span>() {
         <span class="kw">let</span> <span class="ident">builder</span> <span class="op">=</span> <span class="ident">PlainNotificationBuilder</span>::<span class="ident">new</span>(<span class="string">&quot;test&quot;</span>);
         <span class="kw">let</span> <span class="ident">payload</span> <span class="op">=</span> <span class="ident">builder</span>.<span class="ident">build</span>(<span class="string">&quot;a_test_id&quot;</span>, <span class="ident">Default</span>::<span class="ident">default</span>());
         <span class="kw">let</span> <span class="ident">client</span> <span class="op">=</span> <span class="ident">Client</span>::<span class="ident">new</span>(<span class="ident">AlpnConnector</span>::<span class="ident">new</span>(), <span class="prelude-val">None</span>, <span class="ident">Endpoint</span>::<span class="ident">Production</span>);
-        <span class="kw">let</span> <span class="ident">request</span> <span class="op">=</span> <span class="ident">client</span>.<span class="ident">build_request</span>(<span class="ident">payload</span>).<span class="kw">await</span>;
+        <span class="kw">let</span> <span class="ident">request</span> <span class="op">=</span> <span class="ident">client</span>.<span class="ident">build_request</span>(<span class="ident">payload</span>);
         <span class="kw">let</span> <span class="ident">apns_priority</span> <span class="op">=</span> <span class="ident">request</span>.<span class="ident">headers</span>().<span class="ident">get</span>(<span class="string">&quot;apns-priority&quot;</span>);
 
         <span class="macro">assert_eq</span><span class="macro">!</span>(<span class="prelude-val">None</span>, <span class="ident">apns_priority</span>);
     }
 
-    <span class="attribute">#[<span class="ident">tokio</span>::<span class="ident">test</span>]</span>
-    <span class="kw">async</span> <span class="kw">fn</span> <span class="ident">test_request_with_normal_priority</span>() {
+    <span class="attribute">#[<span class="ident">test</span>]</span>
+    <span class="kw">fn</span> <span class="ident">test_request_with_normal_priority</span>() {
         <span class="kw">let</span> <span class="ident">builder</span> <span class="op">=</span> <span class="ident">PlainNotificationBuilder</span>::<span class="ident">new</span>(<span class="string">&quot;test&quot;</span>);
 
         <span class="kw">let</span> <span class="ident">payload</span> <span class="op">=</span> <span class="ident">builder</span>.<span class="ident">build</span>(
@@ -847,14 +853,14 @@
         );
 
         <span class="kw">let</span> <span class="ident">client</span> <span class="op">=</span> <span class="ident">Client</span>::<span class="ident">new</span>(<span class="ident">AlpnConnector</span>::<span class="ident">new</span>(), <span class="prelude-val">None</span>, <span class="ident">Endpoint</span>::<span class="ident">Production</span>);
-        <span class="kw">let</span> <span class="ident">request</span> <span class="op">=</span> <span class="ident">client</span>.<span class="ident">build_request</span>(<span class="ident">payload</span>).<span class="kw">await</span>;
+        <span class="kw">let</span> <span class="ident">request</span> <span class="op">=</span> <span class="ident">client</span>.<span class="ident">build_request</span>(<span class="ident">payload</span>);
         <span class="kw">let</span> <span class="ident">apns_priority</span> <span class="op">=</span> <span class="ident">request</span>.<span class="ident">headers</span>().<span class="ident">get</span>(<span class="string">&quot;apns-priority&quot;</span>).<span class="ident">unwrap</span>();
 
         <span class="macro">assert_eq</span><span class="macro">!</span>(<span class="string">&quot;5&quot;</span>, <span class="ident">apns_priority</span>);
     }
 
-    <span class="attribute">#[<span class="ident">tokio</span>::<span class="ident">test</span>]</span>
-    <span class="kw">async</span> <span class="kw">fn</span> <span class="ident">test_request_with_high_priority</span>() {
+    <span class="attribute">#[<span class="ident">test</span>]</span>
+    <span class="kw">fn</span> <span class="ident">test_request_with_high_priority</span>() {
         <span class="kw">let</span> <span class="ident">builder</span> <span class="op">=</span> <span class="ident">PlainNotificationBuilder</span>::<span class="ident">new</span>(<span class="string">&quot;test&quot;</span>);
 
         <span class="kw">let</span> <span class="ident">payload</span> <span class="op">=</span> <span class="ident">builder</span>.<span class="ident">build</span>(
@@ -866,14 +872,14 @@
         );
 
         <span class="kw">let</span> <span class="ident">client</span> <span class="op">=</span> <span class="ident">Client</span>::<span class="ident">new</span>(<span class="ident">AlpnConnector</span>::<span class="ident">new</span>(), <span class="prelude-val">None</span>, <span class="ident">Endpoint</span>::<span class="ident">Production</span>);
-        <span class="kw">let</span> <span class="ident">request</span> <span class="op">=</span> <span class="ident">client</span>.<span class="ident">build_request</span>(<span class="ident">payload</span>).<span class="kw">await</span>;
+        <span class="kw">let</span> <span class="ident">request</span> <span class="op">=</span> <span class="ident">client</span>.<span class="ident">build_request</span>(<span class="ident">payload</span>);
         <span class="kw">let</span> <span class="ident">apns_priority</span> <span class="op">=</span> <span class="ident">request</span>.<span class="ident">headers</span>().<span class="ident">get</span>(<span class="string">&quot;apns-priority&quot;</span>).<span class="ident">unwrap</span>();
 
         <span class="macro">assert_eq</span><span class="macro">!</span>(<span class="string">&quot;10&quot;</span>, <span class="ident">apns_priority</span>);
     }
 
-    <span class="attribute">#[<span class="ident">tokio</span>::<span class="ident">test</span>]</span>
-    <span class="kw">async</span> <span class="kw">fn</span> <span class="ident">test_request_with_default_apns_id</span>() {
+    <span class="attribute">#[<span class="ident">test</span>]</span>
+    <span class="kw">fn</span> <span class="ident">test_request_with_default_apns_id</span>() {
         <span class="kw">let</span> <span class="ident">builder</span> <span class="op">=</span> <span class="ident">PlainNotificationBuilder</span>::<span class="ident">new</span>(<span class="string">&quot;test&quot;</span>);
 
         <span class="kw">let</span> <span class="ident">payload</span> <span class="op">=</span> <span class="ident">builder</span>.<span class="ident">build</span>(
@@ -882,14 +888,14 @@
         );
 
         <span class="kw">let</span> <span class="ident">client</span> <span class="op">=</span> <span class="ident">Client</span>::<span class="ident">new</span>(<span class="ident">AlpnConnector</span>::<span class="ident">new</span>(), <span class="prelude-val">None</span>, <span class="ident">Endpoint</span>::<span class="ident">Production</span>);
-        <span class="kw">let</span> <span class="ident">request</span> <span class="op">=</span> <span class="ident">client</span>.<span class="ident">build_request</span>(<span class="ident">payload</span>).<span class="kw">await</span>;
+        <span class="kw">let</span> <span class="ident">request</span> <span class="op">=</span> <span class="ident">client</span>.<span class="ident">build_request</span>(<span class="ident">payload</span>);
         <span class="kw">let</span> <span class="ident">apns_id</span> <span class="op">=</span> <span class="ident">request</span>.<span class="ident">headers</span>().<span class="ident">get</span>(<span class="string">&quot;apns-id&quot;</span>);
 
         <span class="macro">assert_eq</span><span class="macro">!</span>(<span class="prelude-val">None</span>, <span class="ident">apns_id</span>);
     }
 
-    <span class="attribute">#[<span class="ident">tokio</span>::<span class="ident">test</span>]</span>
-    <span class="kw">async</span> <span class="kw">fn</span> <span class="ident">test_request_with_an_apns_id</span>() {
+    <span class="attribute">#[<span class="ident">test</span>]</span>
+    <span class="kw">fn</span> <span class="ident">test_request_with_an_apns_id</span>() {
         <span class="kw">let</span> <span class="ident">builder</span> <span class="op">=</span> <span class="ident">PlainNotificationBuilder</span>::<span class="ident">new</span>(<span class="string">&quot;test&quot;</span>);
 
         <span class="kw">let</span> <span class="ident">payload</span> <span class="op">=</span> <span class="ident">builder</span>.<span class="ident">build</span>(
@@ -901,14 +907,14 @@
         );
 
         <span class="kw">let</span> <span class="ident">client</span> <span class="op">=</span> <span class="ident">Client</span>::<span class="ident">new</span>(<span class="ident">AlpnConnector</span>::<span class="ident">new</span>(), <span class="prelude-val">None</span>, <span class="ident">Endpoint</span>::<span class="ident">Production</span>);
-        <span class="kw">let</span> <span class="ident">request</span> <span class="op">=</span> <span class="ident">client</span>.<span class="ident">build_request</span>(<span class="ident">payload</span>).<span class="kw">await</span>;
+        <span class="kw">let</span> <span class="ident">request</span> <span class="op">=</span> <span class="ident">client</span>.<span class="ident">build_request</span>(<span class="ident">payload</span>);
         <span class="kw">let</span> <span class="ident">apns_id</span> <span class="op">=</span> <span class="ident">request</span>.<span class="ident">headers</span>().<span class="ident">get</span>(<span class="string">&quot;apns-id&quot;</span>).<span class="ident">unwrap</span>();
 
         <span class="macro">assert_eq</span><span class="macro">!</span>(<span class="string">&quot;a-test-apns-id&quot;</span>, <span class="ident">apns_id</span>);
     }
 
-    <span class="attribute">#[<span class="ident">tokio</span>::<span class="ident">test</span>]</span>
-    <span class="kw">async</span> <span class="kw">fn</span> <span class="ident">test_request_with_default_apns_expiration</span>() {
+    <span class="attribute">#[<span class="ident">test</span>]</span>
+    <span class="kw">fn</span> <span class="ident">test_request_with_default_apns_expiration</span>() {
         <span class="kw">let</span> <span class="ident">builder</span> <span class="op">=</span> <span class="ident">PlainNotificationBuilder</span>::<span class="ident">new</span>(<span class="string">&quot;test&quot;</span>);
 
         <span class="kw">let</span> <span class="ident">payload</span> <span class="op">=</span> <span class="ident">builder</span>.<span class="ident">build</span>(
@@ -917,14 +923,14 @@
         );
 
         <span class="kw">let</span> <span class="ident">client</span> <span class="op">=</span> <span class="ident">Client</span>::<span class="ident">new</span>(<span class="ident">AlpnConnector</span>::<span class="ident">new</span>(), <span class="prelude-val">None</span>, <span class="ident">Endpoint</span>::<span class="ident">Production</span>);
-        <span class="kw">let</span> <span class="ident">request</span> <span class="op">=</span> <span class="ident">client</span>.<span class="ident">build_request</span>(<span class="ident">payload</span>).<span class="kw">await</span>;
+        <span class="kw">let</span> <span class="ident">request</span> <span class="op">=</span> <span class="ident">client</span>.<span class="ident">build_request</span>(<span class="ident">payload</span>);
         <span class="kw">let</span> <span class="ident">apns_expiration</span> <span class="op">=</span> <span class="ident">request</span>.<span class="ident">headers</span>().<span class="ident">get</span>(<span class="string">&quot;apns-expiration&quot;</span>);
 
         <span class="macro">assert_eq</span><span class="macro">!</span>(<span class="prelude-val">None</span>, <span class="ident">apns_expiration</span>);
     }
 
-    <span class="attribute">#[<span class="ident">tokio</span>::<span class="ident">test</span>]</span>
-    <span class="kw">async</span> <span class="kw">fn</span> <span class="ident">test_request_with_an_apns_expiration</span>() {
+    <span class="attribute">#[<span class="ident">test</span>]</span>
+    <span class="kw">fn</span> <span class="ident">test_request_with_an_apns_expiration</span>() {
         <span class="kw">let</span> <span class="ident">builder</span> <span class="op">=</span> <span class="ident">PlainNotificationBuilder</span>::<span class="ident">new</span>(<span class="string">&quot;test&quot;</span>);
 
         <span class="kw">let</span> <span class="ident">payload</span> <span class="op">=</span> <span class="ident">builder</span>.<span class="ident">build</span>(
@@ -936,14 +942,14 @@
         );
 
         <span class="kw">let</span> <span class="ident">client</span> <span class="op">=</span> <span class="ident">Client</span>::<span class="ident">new</span>(<span class="ident">AlpnConnector</span>::<span class="ident">new</span>(), <span class="prelude-val">None</span>, <span class="ident">Endpoint</span>::<span class="ident">Production</span>);
-        <span class="kw">let</span> <span class="ident">request</span> <span class="op">=</span> <span class="ident">client</span>.<span class="ident">build_request</span>(<span class="ident">payload</span>).<span class="kw">await</span>;
+        <span class="kw">let</span> <span class="ident">request</span> <span class="op">=</span> <span class="ident">client</span>.<span class="ident">build_request</span>(<span class="ident">payload</span>);
         <span class="kw">let</span> <span class="ident">apns_expiration</span> <span class="op">=</span> <span class="ident">request</span>.<span class="ident">headers</span>().<span class="ident">get</span>(<span class="string">&quot;apns-expiration&quot;</span>).<span class="ident">unwrap</span>();
 
         <span class="macro">assert_eq</span><span class="macro">!</span>(<span class="string">&quot;420&quot;</span>, <span class="ident">apns_expiration</span>);
     }
 
-    <span class="attribute">#[<span class="ident">tokio</span>::<span class="ident">test</span>]</span>
-    <span class="kw">async</span> <span class="kw">fn</span> <span class="ident">test_request_with_default_apns_collapse_id</span>() {
+    <span class="attribute">#[<span class="ident">test</span>]</span>
+    <span class="kw">fn</span> <span class="ident">test_request_with_default_apns_collapse_id</span>() {
         <span class="kw">let</span> <span class="ident">builder</span> <span class="op">=</span> <span class="ident">PlainNotificationBuilder</span>::<span class="ident">new</span>(<span class="string">&quot;test&quot;</span>);
 
         <span class="kw">let</span> <span class="ident">payload</span> <span class="op">=</span> <span class="ident">builder</span>.<span class="ident">build</span>(
@@ -952,14 +958,14 @@
         );
 
         <span class="kw">let</span> <span class="ident">client</span> <span class="op">=</span> <span class="ident">Client</span>::<span class="ident">new</span>(<span class="ident">AlpnConnector</span>::<span class="ident">new</span>(), <span class="prelude-val">None</span>, <span class="ident">Endpoint</span>::<span class="ident">Production</span>);
-        <span class="kw">let</span> <span class="ident">request</span> <span class="op">=</span> <span class="ident">client</span>.<span class="ident">build_request</span>(<span class="ident">payload</span>).<span class="kw">await</span>;
+        <span class="kw">let</span> <span class="ident">request</span> <span class="op">=</span> <span class="ident">client</span>.<span class="ident">build_request</span>(<span class="ident">payload</span>);
         <span class="kw">let</span> <span class="ident">apns_collapse_id</span> <span class="op">=</span> <span class="ident">request</span>.<span class="ident">headers</span>().<span class="ident">get</span>(<span class="string">&quot;apns-collapse-id&quot;</span>);
 
         <span class="macro">assert_eq</span><span class="macro">!</span>(<span class="prelude-val">None</span>, <span class="ident">apns_collapse_id</span>);
     }
 
-    <span class="attribute">#[<span class="ident">tokio</span>::<span class="ident">test</span>]</span>
-    <span class="kw">async</span> <span class="kw">fn</span> <span class="ident">test_request_with_an_apns_collapse_id</span>() {
+    <span class="attribute">#[<span class="ident">test</span>]</span>
+    <span class="kw">fn</span> <span class="ident">test_request_with_an_apns_collapse_id</span>() {
         <span class="kw">let</span> <span class="ident">builder</span> <span class="op">=</span> <span class="ident">PlainNotificationBuilder</span>::<span class="ident">new</span>(<span class="string">&quot;test&quot;</span>);
 
         <span class="kw">let</span> <span class="ident">payload</span> <span class="op">=</span> <span class="ident">builder</span>.<span class="ident">build</span>(
@@ -971,14 +977,14 @@
         );
 
         <span class="kw">let</span> <span class="ident">client</span> <span class="op">=</span> <span class="ident">Client</span>::<span class="ident">new</span>(<span class="ident">AlpnConnector</span>::<span class="ident">new</span>(), <span class="prelude-val">None</span>, <span class="ident">Endpoint</span>::<span class="ident">Production</span>);
-        <span class="kw">let</span> <span class="ident">request</span> <span class="op">=</span> <span class="ident">client</span>.<span class="ident">build_request</span>(<span class="ident">payload</span>).<span class="kw">await</span>;
+        <span class="kw">let</span> <span class="ident">request</span> <span class="op">=</span> <span class="ident">client</span>.<span class="ident">build_request</span>(<span class="ident">payload</span>);
         <span class="kw">let</span> <span class="ident">apns_collapse_id</span> <span class="op">=</span> <span class="ident">request</span>.<span class="ident">headers</span>().<span class="ident">get</span>(<span class="string">&quot;apns-collapse-id&quot;</span>).<span class="ident">unwrap</span>();
 
         <span class="macro">assert_eq</span><span class="macro">!</span>(<span class="string">&quot;a_collapse_id&quot;</span>, <span class="ident">apns_collapse_id</span>);
     }
 
-    <span class="attribute">#[<span class="ident">tokio</span>::<span class="ident">test</span>]</span>
-    <span class="kw">async</span> <span class="kw">fn</span> <span class="ident">test_request_with_default_apns_topic</span>() {
+    <span class="attribute">#[<span class="ident">test</span>]</span>
+    <span class="kw">fn</span> <span class="ident">test_request_with_default_apns_topic</span>() {
         <span class="kw">let</span> <span class="ident">builder</span> <span class="op">=</span> <span class="ident">PlainNotificationBuilder</span>::<span class="ident">new</span>(<span class="string">&quot;test&quot;</span>);
 
         <span class="kw">let</span> <span class="ident">payload</span> <span class="op">=</span> <span class="ident">builder</span>.<span class="ident">build</span>(
@@ -987,14 +993,14 @@
         );
 
         <span class="kw">let</span> <span class="ident">client</span> <span class="op">=</span> <span class="ident">Client</span>::<span class="ident">new</span>(<span class="ident">AlpnConnector</span>::<span class="ident">new</span>(), <span class="prelude-val">None</span>, <span class="ident">Endpoint</span>::<span class="ident">Production</span>);
-        <span class="kw">let</span> <span class="ident">request</span> <span class="op">=</span> <span class="ident">client</span>.<span class="ident">build_request</span>(<span class="ident">payload</span>).<span class="kw">await</span>;
+        <span class="kw">let</span> <span class="ident">request</span> <span class="op">=</span> <span class="ident">client</span>.<span class="ident">build_request</span>(<span class="ident">payload</span>);
         <span class="kw">let</span> <span class="ident">apns_topic</span> <span class="op">=</span> <span class="ident">request</span>.<span class="ident">headers</span>().<span class="ident">get</span>(<span class="string">&quot;apns-topic&quot;</span>);
 
         <span class="macro">assert_eq</span><span class="macro">!</span>(<span class="prelude-val">None</span>, <span class="ident">apns_topic</span>);
     }
 
-    <span class="attribute">#[<span class="ident">tokio</span>::<span class="ident">test</span>]</span>
-    <span class="kw">async</span> <span class="kw">fn</span> <span class="ident">test_request_with_an_apns_topic</span>() {
+    <span class="attribute">#[<span class="ident">test</span>]</span>
+    <span class="kw">fn</span> <span class="ident">test_request_with_an_apns_topic</span>() {
         <span class="kw">let</span> <span class="ident">builder</span> <span class="op">=</span> <span class="ident">PlainNotificationBuilder</span>::<span class="ident">new</span>(<span class="string">&quot;test&quot;</span>);
 
         <span class="kw">let</span> <span class="ident">payload</span> <span class="op">=</span> <span class="ident">builder</span>.<span class="ident">build</span>(
@@ -1006,7 +1012,7 @@
         );
 
         <span class="kw">let</span> <span class="ident">client</span> <span class="op">=</span> <span class="ident">Client</span>::<span class="ident">new</span>(<span class="ident">AlpnConnector</span>::<span class="ident">new</span>(), <span class="prelude-val">None</span>, <span class="ident">Endpoint</span>::<span class="ident">Production</span>);
-        <span class="kw">let</span> <span class="ident">request</span> <span class="op">=</span> <span class="ident">client</span>.<span class="ident">build_request</span>(<span class="ident">payload</span>).<span class="kw">await</span>;
+        <span class="kw">let</span> <span class="ident">request</span> <span class="op">=</span> <span class="ident">client</span>.<span class="ident">build_request</span>(<span class="ident">payload</span>);
         <span class="kw">let</span> <span class="ident">apns_topic</span> <span class="op">=</span> <span class="ident">request</span>.<span class="ident">headers</span>().<span class="ident">get</span>(<span class="string">&quot;apns-topic&quot;</span>).<span class="ident">unwrap</span>();
 
         <span class="macro">assert_eq</span><span class="macro">!</span>(<span class="string">&quot;a_topic&quot;</span>, <span class="ident">apns_topic</span>);
@@ -1017,7 +1023,7 @@
         <span class="kw">let</span> <span class="ident">builder</span> <span class="op">=</span> <span class="ident">PlainNotificationBuilder</span>::<span class="ident">new</span>(<span class="string">&quot;test&quot;</span>);
         <span class="kw">let</span> <span class="ident">payload</span> <span class="op">=</span> <span class="ident">builder</span>.<span class="ident">build</span>(<span class="string">&quot;a_test_id&quot;</span>, <span class="ident">Default</span>::<span class="ident">default</span>());
         <span class="kw">let</span> <span class="ident">client</span> <span class="op">=</span> <span class="ident">Client</span>::<span class="ident">new</span>(<span class="ident">AlpnConnector</span>::<span class="ident">new</span>(), <span class="prelude-val">None</span>, <span class="ident">Endpoint</span>::<span class="ident">Production</span>);
-        <span class="kw">let</span> <span class="ident">request</span> <span class="op">=</span> <span class="ident">client</span>.<span class="ident">build_request</span>(<span class="ident">payload</span>.<span class="ident">clone</span>()).<span class="kw">await</span>;
+        <span class="kw">let</span> <span class="ident">request</span> <span class="op">=</span> <span class="ident">client</span>.<span class="ident">build_request</span>(<span class="ident">payload</span>.<span class="ident">clone</span>());
 
         <span class="kw">let</span> <span class="kw-2">mut</span> <span class="ident">body</span>: <span class="ident">Vec</span><span class="op">&lt;</span><span class="ident">u8</span><span class="op">&gt;</span> <span class="op">=</span> <span class="ident">Vec</span>::<span class="ident">new</span>();
         <span class="kw">let</span> <span class="kw-2">mut</span> <span class="ident">chunks</span> <span class="op">=</span> <span class="ident">request</span>.<span class="ident">into_body</span>();
