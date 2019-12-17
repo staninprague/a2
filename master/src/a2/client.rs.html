@@ -630,7 +630,7 @@
         <span class="ident">R</span>: <span class="ident">Read</span>,
     {
         <span class="kw">let</span> <span class="ident">connector</span> <span class="op">=</span> <span class="ident">AlpnConnector</span>::<span class="ident">new</span>();
-        <span class="kw">let</span> <span class="ident">signature_ttl</span> <span class="op">=</span> <span class="number">60</span> <span class="op">*</span> <span class="number">45</span>; <span class="comment">// seconds</span>
+        <span class="kw">let</span> <span class="ident">signature_ttl</span> <span class="op">=</span> <span class="ident">Duration</span>::<span class="ident">from_secs</span>(<span class="number">45</span>);
         <span class="kw">let</span> <span class="ident">signer</span> <span class="op">=</span> <span class="ident">Signer</span>::<span class="ident">new</span>(<span class="ident">pkcs8_pem</span>, <span class="ident">key_id</span>, <span class="ident">team_id</span>, <span class="ident">signature_ttl</span>)<span class="question-mark">?</span>;
 
         <span class="prelude-val">Ok</span>(<span class="self">Self</span>::<span class="ident">new</span>(<span class="ident">connector</span>, <span class="prelude-val">Some</span>(<span class="ident">signer</span>), <span class="ident">endpoint</span>))
@@ -814,7 +814,7 @@
 
     <span class="attribute">#[<span class="ident">tokio</span>::<span class="ident">test</span>]</span>
     <span class="kw">async</span> <span class="kw">fn</span> <span class="ident">test_request_authorization_with_a_signer</span>() {
-        <span class="kw">let</span> <span class="ident">signer</span> <span class="op">=</span> <span class="ident">Signer</span>::<span class="ident">new</span>(<span class="ident">PRIVATE_KEY</span>.<span class="ident">as_bytes</span>(), <span class="string">&quot;89AFRD1X22&quot;</span>, <span class="string">&quot;ASDFQWERTY&quot;</span>, <span class="number">100</span>).<span class="ident">unwrap</span>();
+        <span class="kw">let</span> <span class="ident">signer</span> <span class="op">=</span> <span class="ident">Signer</span>::<span class="ident">new</span>(<span class="ident">PRIVATE_KEY</span>.<span class="ident">as_bytes</span>(), <span class="string">&quot;89AFRD1X22&quot;</span>, <span class="string">&quot;ASDFQWERTY&quot;</span>, <span class="ident">Duration</span>::<span class="ident">from_secs</span>(<span class="number">100</span>)).<span class="ident">unwrap</span>();
         <span class="kw">let</span> <span class="ident">builder</span> <span class="op">=</span> <span class="ident">PlainNotificationBuilder</span>::<span class="ident">new</span>(<span class="string">&quot;test&quot;</span>);
         <span class="kw">let</span> <span class="ident">payload</span> <span class="op">=</span> <span class="ident">builder</span>.<span class="ident">build</span>(<span class="string">&quot;a_test_id&quot;</span>, <span class="ident">Default</span>::<span class="ident">default</span>());
         <span class="kw">let</span> <span class="ident">client</span> <span class="op">=</span> <span class="ident">Client</span>::<span class="ident">new</span>(<span class="ident">AlpnConnector</span>::<span class="ident">new</span>(), <span class="prelude-val">Some</span>(<span class="ident">signer</span>), <span class="ident">Endpoint</span>::<span class="ident">Production</span>);
