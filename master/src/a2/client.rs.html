@@ -517,7 +517,6 @@
 <span id="517">517</span>
 <span id="518">518</span>
 <span id="519">519</span>
-<span id="520">520</span>
 </pre><div class="example-wrap"><pre class="rust ">
 <span class="doccomment">//! The client module for sending requests and parsing responses</span>
 
@@ -584,14 +583,13 @@
         <span class="ident">endpoint</span>: <span class="ident">Endpoint</span>,
     ) <span class="op">-</span><span class="op">&gt;</span> <span class="ident">Client</span> {
         <span class="kw">let</span> <span class="kw-2">mut</span> <span class="ident">builder</span> <span class="op">=</span> <span class="ident">HttpClient</span>::<span class="ident">builder</span>();
-        <span class="ident">builder</span>.<span class="ident">keep_alive_timeout</span>(<span class="prelude-val">Some</span>(<span class="ident">Duration</span>::<span class="ident">from_secs</span>(<span class="number">600</span>)));
+        <span class="ident">builder</span>.<span class="ident">pool_idle_timeout</span>(<span class="prelude-val">Some</span>(<span class="ident">Duration</span>::<span class="ident">from_secs</span>(<span class="number">600</span>)));
         <span class="ident">builder</span>.<span class="ident">http2_only</span>(<span class="bool-val">true</span>);
-        <span class="ident">builder</span>.<span class="ident">keep_alive</span>(<span class="bool-val">true</span>);
 
         <span class="ident">Client</span> {
             <span class="ident">http_client</span>: <span class="ident">builder</span>.<span class="ident">build</span>(<span class="ident">connector</span>),
-            <span class="ident">signer</span>: <span class="ident">signer</span>,
-            <span class="ident">endpoint</span>: <span class="ident">endpoint</span>,
+            <span class="ident">signer</span>,
+            <span class="ident">endpoint</span>,
         }
     }
 
