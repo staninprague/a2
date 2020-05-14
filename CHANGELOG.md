@@ -1,5 +1,9 @@
 # Changelog
 
+## v0.5.3
+
+- Fix warnings [#45](https://github.com/pimeys/a2/pull/45)
+
 ## v0.5.2
 
 - Fix `TooManyProviderTokenUpdates` issue [#44](https://github.com/pimeys/a2/pull/44)
