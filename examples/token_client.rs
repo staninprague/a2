@@ -49,7 +49,7 @@ async fn main() -> Result<(), Box<dyn std::error::Error + Send + Sync>> {
     };
 
     // Connecting to APNs
-    let client = Client::token(&mut private_key, key_id, team_id, endpoint).unwrap();
+    let client = Client::token(&mut private_key, key_id, team_id, endpoint, 443).unwrap();
 
     let options = NotificationOptions {
         apns_topic: topic.as_ref().map(|s| &**s),

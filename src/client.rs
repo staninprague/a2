@@ -20,7 +20,7 @@ use std::{fmt, str};
 pub enum Endpoint {
     /// The production environment (api.push.apple.com)
     Production,
-    /// The development/test environment (api.development.push.apple.com)
+    /// The sandbox/test environment (api.sandbox.push.apple.com)
     Sandbox,
 }
 
@@ -28,7 +28,7 @@ impl fmt::Display for Endpoint {
     fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
         let host = match self {
             Endpoint::Production => "api.push.apple.com",
-            Endpoint::Sandbox => "api.development.push.apple.com",
+            Endpoint::Sandbox => "api.sandbox.push.apple.com",
         };
 
         write!(f, "{}", host)
@@ -45,12 +45,18 @@ impl fmt::Display for Endpoint {
 /// holds the response for handling.
 pub struct Client {
     endpoint: Endpoint,
+    port: i16,
     signer: Option<Signer>,
     http_client: HttpClient<AlpnConnector>,
 }
 
 impl Client {
-    fn new(connector: AlpnConnector, signer: Option<Signer>, endpoint: Endpoint) -> Client {
+    fn new(
+        connector: AlpnConnector,
+        signer: Option<Signer>,
+        endpoint: Endpoint,
+        port: i16,
+    ) -> Client {
         let mut builder = HttpClient::builder();
         builder.pool_idle_timeout(Some(Duration::from_secs(600)));
         builder.http2_only(true);
@@ -59,13 +65,19 @@ impl Client {
             http_client: builder.build(connector),
             signer,
             endpoint,
+            port,
         }
     }
 
     /// Create a connection to APNs using the provider client certificate which
     /// you obtain from your [Apple developer
     /// account](https://developer.apple.com/account/).
-    pub fn certificate<R>(certificate: &mut R, password: &str, endpoint: Endpoint) -> Result<Client, Error>
+    pub fn certificate<R>(
+        certificate: &mut R,
+        password: &str,
+        endpoint: Endpoint,
+        port: i16,
+    ) -> Result<Client, Error>
     where
         R: Read,
     {
@@ -75,14 +87,20 @@ impl Client {
         let pkcs = Pkcs12::from_der(&cert_der)?.parse(password)?;
         let connector = AlpnConnector::with_client_cert(&pkcs.cert.to_pem()?, &pkcs.pkey.private_key_to_pem_pkcs8()?)?;
 
-        Ok(Self::new(connector, None, endpoint))
+        Ok(Self::new(connector, None, endpoint, port))
     }
 
     /// Create a connection to APNs using system certificates, signing every
     /// request with a signature using a private key, key id and team id
     /// provisioned from your [Apple developer
     /// account](https://developer.apple.com/account/).
-    pub fn token<S, T, R>(pkcs8_pem: R, key_id: S, team_id: T, endpoint: Endpoint) -> Result<Client, Error>
+    pub fn token<S, T, R>(
+        pkcs8_pem: R,
+        key_id: S,
+        team_id: T,
+        endpoint: Endpoint,
+        port: i16,
+    ) -> Result<Client, Error>
     where
         S: Into<String>,
         T: Into<String>,
@@ -92,13 +110,16 @@ impl Client {
         let signature_ttl = Duration::from_secs(60 * 55);
         let signer = Signer::new(pkcs8_pem, key_id, team_id, signature_ttl)?;
 
-        Ok(Self::new(connector, Some(signer), endpoint))
+        Ok(Self::new(connector, Some(signer), endpoint, port))
     }
 
     /// Send a notification payload.
     ///
     /// See [ErrorReason](enum.ErrorReason.html) for possible errors.
-    pub fn send(&self, payload: Payload<'_>) -> impl Future<Output = Result<Response, Error>> + 'static {
+    pub fn send(
+        &self,
+        payload: Payload<'_>,
+    ) -> impl Future<Output = Result<Response, Error>> + 'static {
         let request = self.build_request(payload);
         let requesting = self.http_client.request(request);
 
@@ -131,7 +152,10 @@ impl Client {
     }
 
     fn build_request(&self, payload: Payload<'_>) -> hyper::Request<Body> {
-        let path = format!("https://{}/3/device/{}", self.endpoint, payload.device_token);
+        let path = format!(
+            "https://{}:{}/3/device/{}",
+            self.endpoint, self.port, payload.device_token
+        );
 
         let mut builder = hyper::Request::builder()
             .uri(&path)
@@ -192,29 +216,32 @@ mod tests {
     fn test_production_request_uri() {
         let builder = PlainNotificationBuilder::new("test");
         let payload = builder.build("a_test_id", Default::default());
-        let client = Client::new(AlpnConnector::new(), None, Endpoint::Production);
+        let client = Client::new(AlpnConnector::new(), None, Endpoint::Production, 443);
         let request = client.build_request(payload);
         let uri = format!("{}", request.uri());
 
-        assert_eq!("https://api.push.apple.com/3/device/a_test_id", &uri);
+        assert_eq!("https://api.push.apple.com:443/3/device/a_test_id", &uri);
     }
 
     #[test]
     fn test_sandbox_request_uri() {
         let builder = PlainNotificationBuilder::new("test");
         let payload = builder.build("a_test_id", Default::default());
-        let client = Client::new(AlpnConnector::new(), None, Endpoint::Sandbox);
+        let client = Client::new(AlpnConnector::new(), None, Endpoint::Sandbox, 443);
         let request = client.build_request(payload);
         let uri = format!("{}", request.uri());
 
-        assert_eq!("https://api.development.push.apple.com/3/device/a_test_id", &uri);
+        assert_eq!(
+            "https://api.sandbox.push.apple.com:443/3/device/a_test_id",
+            &uri
+        );
     }
 
     #[test]
     fn test_request_method() {
         let builder = PlainNotificationBuilder::new("test");
         let payload = builder.build("a_test_id", Default::default());
-        let client = Client::new(AlpnConnector::new(), None, Endpoint::Production);
+        let client = Client::new(AlpnConnector::new(), None, Endpoint::Production, 443);
         let request = client.build_request(payload);
 
         assert_eq!(&Method::POST, request.method());
@@ -224,17 +251,20 @@ mod tests {
     fn test_request_content_type() {
         let builder = PlainNotificationBuilder::new("test");
         let payload = builder.build("a_test_id", Default::default());
-        let client = Client::new(AlpnConnector::new(), None, Endpoint::Production);
+        let client = Client::new(AlpnConnector::new(), None, Endpoint::Production, 443);
         let request = client.build_request(payload);
 
-        assert_eq!("application/json", request.headers().get(CONTENT_TYPE).unwrap());
+        assert_eq!(
+            "application/json",
+            request.headers().get(CONTENT_TYPE).unwrap()
+        );
     }
 
     #[test]
     fn test_request_content_length() {
         let builder = PlainNotificationBuilder::new("test");
         let payload = builder.build("a_test_id", Default::default());
-        let client = Client::new(AlpnConnector::new(), None, Endpoint::Production);
+        let client = Client::new(AlpnConnector::new(), None, Endpoint::Production, 443);
         let request = client.build_request(payload.clone());
         let payload_json = payload.to_json_string().unwrap();
         let content_length = request.headers().get(CONTENT_LENGTH).unwrap().to_str().unwrap();
@@ -246,7 +276,7 @@ mod tests {
     fn test_request_authorization_with_no_signer() {
         let builder = PlainNotificationBuilder::new("test");
         let payload = builder.build("a_test_id", Default::default());
-        let client = Client::new(AlpnConnector::new(), None, Endpoint::Production);
+        let client = Client::new(AlpnConnector::new(), None, Endpoint::Production, 434);
         let request = client.build_request(payload);
 
         assert_eq!(None, request.headers().get(AUTHORIZATION));
@@ -264,7 +294,12 @@ mod tests {
 
         let builder = PlainNotificationBuilder::new("test");
         let payload = builder.build("a_test_id", Default::default());
-        let client = Client::new(AlpnConnector::new(), Some(signer), Endpoint::Production);
+        let client = Client::new(
+            AlpnConnector::new(),
+            Some(signer),
+            Endpoint::Production,
+            443,
+        );
         let request = client.build_request(payload);
 
         assert_ne!(None, request.headers().get(AUTHORIZATION));
@@ -274,7 +309,7 @@ mod tests {
     fn test_request_with_default_priority() {
         let builder = PlainNotificationBuilder::new("test");
         let payload = builder.build("a_test_id", Default::default());
-        let client = Client::new(AlpnConnector::new(), None, Endpoint::Production);
+        let client = Client::new(AlpnConnector::new(), None, Endpoint::Production, 443);
         let request = client.build_request(payload);
         let apns_priority = request.headers().get("apns-priority");
 
@@ -293,7 +328,7 @@ mod tests {
             },
         );
 
-        let client = Client::new(AlpnConnector::new(), None, Endpoint::Production);
+        let client = Client::new(AlpnConnector::new(), None, Endpoint::Production, 443);
         let request = client.build_request(payload);
         let apns_priority = request.headers().get("apns-priority").unwrap();
 
@@ -312,7 +347,7 @@ mod tests {
             },
         );
 
-        let client = Client::new(AlpnConnector::new(), None, Endpoint::Production);
+        let client = Client::new(AlpnConnector::new(), None, Endpoint::Production, 443);
         let request = client.build_request(payload);
         let apns_priority = request.headers().get("apns-priority").unwrap();
 
@@ -325,7 +360,7 @@ mod tests {
 
         let payload = builder.build("a_test_id", Default::default());
 
-        let client = Client::new(AlpnConnector::new(), None, Endpoint::Production);
+        let client = Client::new(AlpnConnector::new(), None, Endpoint::Production, 443);
         let request = client.build_request(payload);
         let apns_id = request.headers().get("apns-id");
 
@@ -344,7 +379,7 @@ mod tests {
             },
         );
 
-        let client = Client::new(AlpnConnector::new(), None, Endpoint::Production);
+        let client = Client::new(AlpnConnector::new(), None, Endpoint::Production, 443);
         let request = client.build_request(payload);
         let apns_id = request.headers().get("apns-id").unwrap();
 
@@ -357,7 +392,7 @@ mod tests {
 
         let payload = builder.build("a_test_id", Default::default());
 
-        let client = Client::new(AlpnConnector::new(), None, Endpoint::Production);
+        let client = Client::new(AlpnConnector::new(), None, Endpoint::Production, 443);
         let request = client.build_request(payload);
         let apns_expiration = request.headers().get("apns-expiration");
 
@@ -376,7 +411,7 @@ mod tests {
             },
         );
 
-        let client = Client::new(AlpnConnector::new(), None, Endpoint::Production);
+        let client = Client::new(AlpnConnector::new(), None, Endpoint::Production, 443);
         let request = client.build_request(payload);
         let apns_expiration = request.headers().get("apns-expiration").unwrap();
 
@@ -389,7 +424,7 @@ mod tests {
 
         let payload = builder.build("a_test_id", Default::default());
 
-        let client = Client::new(AlpnConnector::new(), None, Endpoint::Production);
+        let client = Client::new(AlpnConnector::new(), None, Endpoint::Production, 443);
         let request = client.build_request(payload);
         let apns_collapse_id = request.headers().get("apns-collapse-id");
 
@@ -408,7 +443,7 @@ mod tests {
             },
         );
 
-        let client = Client::new(AlpnConnector::new(), None, Endpoint::Production);
+        let client = Client::new(AlpnConnector::new(), None, Endpoint::Production, 443);
         let request = client.build_request(payload);
         let apns_collapse_id = request.headers().get("apns-collapse-id").unwrap();
 
@@ -421,7 +456,7 @@ mod tests {
 
         let payload = builder.build("a_test_id", Default::default());
 
-        let client = Client::new(AlpnConnector::new(), None, Endpoint::Production);
+        let client = Client::new(AlpnConnector::new(), None, Endpoint::Production, 443);
         let request = client.build_request(payload);
         let apns_topic = request.headers().get("apns-topic");
 
@@ -440,7 +475,7 @@ mod tests {
             },
         );
 
-        let client = Client::new(AlpnConnector::new(), None, Endpoint::Production);
+        let client = Client::new(AlpnConnector::new(), None, Endpoint::Production, 443);
         let request = client.build_request(payload);
         let apns_topic = request.headers().get("apns-topic").unwrap();
 
@@ -451,7 +486,7 @@ mod tests {
     async fn test_request_body() {
         let builder = PlainNotificationBuilder::new("test");
         let payload = builder.build("a_test_id", Default::default());
-        let client = Client::new(AlpnConnector::new(), None, Endpoint::Production);
+        let client = Client::new(AlpnConnector::new(), None, Endpoint::Production, 443);
         let request = client.build_request(payload.clone());
 
         let body = hyper::body::to_bytes(request).await.unwrap();

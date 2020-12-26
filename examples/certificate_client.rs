@@ -45,7 +45,7 @@ async fn main() -> Result<(), Box<dyn std::error::Error + Send + Sync>> {
     };
 
     // Connecting to APNs using a client certificate
-    let client = Client::certificate(&mut certificate, &password, endpoint).unwrap();
+    let client = Client::certificate(&mut certificate, &password, endpoint, 443).unwrap();
 
     let options = NotificationOptions {
         apns_topic: topic.as_ref().map(|s| &**s),
