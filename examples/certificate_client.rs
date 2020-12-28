@@ -1,14 +1,8 @@
-use tokio;
-use pretty_env_logger;
+use a2::{Client, Endpoint, NotificationBuilder, NotificationOptions, PlainNotificationBuilder};
 use argparse::{ArgumentParser, Store, StoreOption, StoreTrue};
+use pretty_env_logger;
 use std::fs::File;
-use a2::{
-    NotificationBuilder,
-    NotificationOptions,
-    PlainNotificationBuilder,
-    Client,
-    Endpoint,
-};
+use tokio;
 
 // An example client connectiong to APNs with a certificate and key
 #[tokio::main]
@@ -60,7 +54,7 @@ async fn main() -> Result<(), Box<dyn std::error::Error + Send + Sync>> {
     };
 
     // Connecting to APNs using a client certificate
-    let client = Client::certificate(&mut certificate, &password, endpoint).unwrap();
+    let client = Client::certificate(&mut certificate, &password, endpoint, 443).unwrap();
 
     let options = NotificationOptions {
         apns_topic: topic.as_ref().map(|s| &**s),
