@@ -51,12 +51,7 @@ pub struct Client {
 }
 
 impl Client {
-    fn new(
-        connector: AlpnConnector,
-        signer: Option<Signer>,
-        endpoint: Endpoint,
-        port: i16,
-    ) -> Client {
+    fn new(connector: AlpnConnector, signer: Option<Signer>, endpoint: Endpoint, port: i16) -> Client {
         let mut builder = HttpClient::builder();
         builder.pool_idle_timeout(Some(Duration::from_secs(600)));
         builder.http2_only(true);
@@ -72,12 +67,7 @@ impl Client {
     /// Create a connection to APNs using the provider client certificate which
     /// you obtain from your [Apple developer
     /// account](https://developer.apple.com/account/).
-    pub fn certificate<R>(
-        certificate: &mut R,
-        password: &str,
-        endpoint: Endpoint,
-        port: i16,
-    ) -> Result<Client, Error>
+    pub fn certificate<R>(certificate: &mut R, password: &str, endpoint: Endpoint, port: i16) -> Result<Client, Error>
     where
         R: Read,
     {
@@ -94,13 +84,7 @@ impl Client {
     /// request with a signature using a private key, key id and team id
     /// provisioned from your [Apple developer
     /// account](https://developer.apple.com/account/).
-    pub fn token<S, T, R>(
-        pkcs8_pem: R,
-        key_id: S,
-        team_id: T,
-        endpoint: Endpoint,
-        port: i16,
-    ) -> Result<Client, Error>
+    pub fn token<S, T, R>(pkcs8_pem: R, key_id: S, team_id: T, endpoint: Endpoint, port: i16) -> Result<Client, Error>
     where
         S: Into<String>,
         T: Into<String>,
@@ -116,10 +100,7 @@ impl Client {
     /// Send a notification payload.
     ///
     /// See [ErrorReason](enum.ErrorReason.html) for possible errors.
-    pub fn send(
-        &self,
-        payload: Payload<'_>,
-    ) -> impl Future<Output = Result<Response, Error>> + 'static {
+    pub fn send(&self, payload: Payload<'_>) -> impl Future<Output = Result<Response, Error>> + 'static {
         let request = self.build_request(payload);
         let requesting = self.http_client.request(request);
 
@@ -231,10 +212,7 @@ mod tests {
         let request = client.build_request(payload);
         let uri = format!("{}", request.uri());
 
-        assert_eq!(
-            "https://api.sandbox.push.apple.com:443/3/device/a_test_id",
-            &uri
-        );
+        assert_eq!("https://api.sandbox.push.apple.com:443/3/device/a_test_id", &uri);
     }
 
     #[test]
@@ -254,10 +232,7 @@ mod tests {
         let client = Client::new(AlpnConnector::new(), None, Endpoint::Production, 443);
         let request = client.build_request(payload);
 
-        assert_eq!(
-            "application/json",
-            request.headers().get(CONTENT_TYPE).unwrap()
-        );
+        assert_eq!("application/json", request.headers().get(CONTENT_TYPE).unwrap());
     }
 
     #[test]
@@ -294,12 +269,7 @@ mod tests {
 
         let builder = PlainNotificationBuilder::new("test");
         let payload = builder.build("a_test_id", Default::default());
-        let client = Client::new(
-            AlpnConnector::new(),
-            Some(signer),
-            Endpoint::Production,
-            443,
-        );
+        let client = Client::new(AlpnConnector::new(), Some(signer), Endpoint::Production, 443);
         let request = client.build_request(payload);
 
         assert_ne!(None, request.headers().get(AUTHORIZATION));
