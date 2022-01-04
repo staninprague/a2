@@ -1,3 +1,5 @@
+#![allow(clippy::all)]
+
 use argparse::{ArgumentParser, Store, StoreOption, StoreTrue};
 use pretty_env_logger;
 use std::fs::File;
