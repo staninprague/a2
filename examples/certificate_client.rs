@@ -6,8 +6,6 @@ use pretty_env_logger;
 use std::fs::File;
 use tokio;
 
-
-
 // An example client connectiong to APNs with a certificate and key
 #[tokio::main]
 async fn main() -> Result<(), Box<dyn std::error::Error + Send + Sync>> {
