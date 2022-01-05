@@ -1,6 +1,6 @@
 # a2
 
-[![Cargo tests](https://github.com/staninprague/a2/actions/workflows/test.yml/badge.svg)](https://github.com/pimeys/a2/actions/workflows/test.yml)
+[![Cargo tests](https://github.com/staninprague/a2/actions/workflows/test.yml/badge.svg)](https://github.com/staninprague/a2/actions/workflows/test.yml)
 [![MIT licensed](https://img.shields.io/badge/license-MIT-blue.svg)](./LICENSE)
 
 HTTP/2 Apple Push Notification Service for Rust using Tokio and async sending.
