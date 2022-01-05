@@ -1,16 +1,21 @@
 # a2
 
-[![Cargo tests](https://github.com/pimeys/a2/actions/workflows/test.yml/badge.svg)](https://github.com/pimeys/a2/actions/workflows/test.yml)
+[![Cargo tests](https://github.com/staninprague/a2/actions/workflows/test.yml/badge.svg)](https://github.com/pimeys/a2/actions/workflows/test.yml)
 [![MIT licensed](https://img.shields.io/badge/license-MIT-blue.svg)](./LICENSE)
-[![crates.io](http://meritbadge.herokuapp.com/a2)](https://crates.io/crates/a2)
-
-[Matrix chat](https://matrix.to/#/#rust-push:nauk.io?via=nauk.io&via=matrix.org&via=shine.horse)
 
 HTTP/2 Apple Push Notification Service for Rust using Tokio and async sending.
 
-## Help needed
+## About this fork
 
-The main author is not currently owning any Apple phones, so would be nice to have some help from a co-author with needed devices and an Apple developer account. If you happen to have them and are willing to help, please contact!
+Forked by staninprague and following has been changed so far:
+
+- Added port to Client so different from 443 port can be used.
+- Added "tcp" feature to hyper usage in cargo.toml, so examples can run.
+- Last merge with the origin on 24 Nov 2021.
+
+As I see an almost 2 years old pull request in the origin repo and issues not being replied to, I'll just keep doing some changes here, with no ambitions to pull them back.
+
+The rest of a README is equivalent to the origin.
 
 ## Requirements
 
