@@ -50,7 +50,8 @@
 //!     &mut file,
 //!     "KEY_ID",
 //!     "TEAM_ID",
-//!     Endpoint::Production).unwrap();
+//!     Endpoint::Production,
+//!     443).unwrap();
 //!
 //! let response = client.send(payload).await?;
 //! println!("Sent: {:?}", response);
@@ -96,7 +97,8 @@
 //!     let client = Client::certificate(
 //!         &mut file,
 //!         "Correct Horse Battery Stable",
-//!         Endpoint::Production)?;
+//!         Endpoint::Production,
+//!         443)?;
 //!
 //!     let response = client.send(payload).await?;
 //!     println!("Sent: {:?}", response);
