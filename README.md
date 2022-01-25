@@ -13,7 +13,6 @@ Forked by staninprague and following has been changed so far:
 - Added "tcp" feature to hyper usage in cargo.toml, so examples can run.
 - Last merge with the origin on 24 Nov 2021.
 
-As I see an almost 2 years old pull request in the origin repo and issues not being replied to, I'll just keep doing some changes here, with no ambitions to pull them back.
 
 The rest of a README is equivalent to the origin.
 
