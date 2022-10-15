@@ -1,4 +1,6 @@
 //! The client module for sending requests and parsing responses
+//!
+//!
 
 use crate::error::Error;
 use crate::error::Error::ResponseError;
