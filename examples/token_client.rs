@@ -1,16 +1,16 @@
 #![allow(clippy::all)]
 
 use argparse::{ArgumentParser, Store, StoreOption, StoreTrue};
-use pretty_env_logger;
 use std::fs::File;
-use tokio;
 
-use a2::{Client, Endpoint, NotificationBuilder, NotificationOptions, PlainNotificationBuilder};
+use a2::{
+    client::ClientConfig, Client, DefaultNotificationBuilder, Endpoint, NotificationBuilder, NotificationOptions,
+};
 
 // An example client connectiong to APNs with a JWT token
 #[tokio::main]
 async fn main() -> Result<(), Box<dyn std::error::Error + Send + Sync>> {
-    pretty_env_logger::init();
+    tracing_subscriber::fmt().init();
 
     let mut key_file = String::new();
     let mut team_id = String::new();
@@ -50,18 +50,22 @@ async fn main() -> Result<(), Box<dyn std::error::Error + Send + Sync>> {
         Endpoint::Production
     };
 
+    // Create config with the given endpoint and default timeouts
+    let client_config = ClientConfig::new(endpoint);
+
     // Connecting to APNs
-    let client = Client::token(&mut private_key, key_id, team_id, endpoint, 443).unwrap();
+    let client = Client::token(&mut private_key, key_id, team_id, client_config).unwrap();
 
     let options = NotificationOptions {
-        apns_topic: topic.as_ref().map(|s| &**s),
+        apns_topic: topic.as_deref(),
         ..Default::default()
     };
 
     // Notification payload
-    let mut builder = PlainNotificationBuilder::new(message.as_ref());
-    builder.set_sound("default");
-    builder.set_badge(1u32);
+    let builder = DefaultNotificationBuilder::new()
+        .set_body(message.as_ref())
+        .set_sound("default")
+        .set_badge(1u32);
 
     let payload = builder.build(device_token.as_ref(), options);
     let response = client.send(payload).await?;

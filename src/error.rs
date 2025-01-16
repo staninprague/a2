@@ -1,6 +1,5 @@
-//! Error and result module
-
-use crate::response::Response;
+/// Error and result module
+use crate::{response::Response, signer::SignerError};
 use std::io;
 use thiserror::Error;
 
@@ -14,9 +13,12 @@ pub enum Error {
     #[error("Error connecting to APNs: {0}")]
     ConnectionError(#[from] hyper::Error),
 
+    #[error("Http client error: {0}")]
+    ClientError(#[from] hyper_util::client::legacy::Error),
+
     /// Couldn't generate an APNs token with the given key.
     #[error("Error creating a signature: {0}")]
-    SignerError(#[from] openssl::error::ErrorStack),
+    SignerError(#[from] SignerError),
 
     /// APNs couldn't accept the notification. Contains
     /// [Response](response/struct.Response.html) with additional
@@ -38,4 +40,30 @@ pub enum Error {
     /// Error reading the certificate or private key.
     #[error("Error in reading a certificate file: {0}")]
     ReadError(#[from] io::Error),
+
+    #[error("Error building TLS config: {0}")]
+    Tls(#[from] rustls::Error),
+
+    /// Error while creating the HTTP request
+    #[error("Failed to construct HTTP request: {0}")]
+    BuildRequestError(#[source] http::Error),
+
+    /// No repsonse from APNs after the given amount of time
+    #[error("The request timed out after {0} s")]
+    RequestTimeout(u64),
+
+    /// Unexpected private key (only EC keys are supported).
+    #[cfg(all(not(feature = "openssl"), feature = "ring"))]
+    #[error("Unexpected private key: {0}")]
+    UnexpectedKey(#[from] ring::error::KeyRejected),
+
+    #[error("Invalid certificate")]
+    InvalidCertificate,
+}
+
+#[cfg(feature = "openssl")]
+impl From<openssl::error::ErrorStack> for Error {
+    fn from(e: openssl::error::ErrorStack) -> Self {
+        Self::SignerError(SignerError::OpenSSL(e))
+    }
 }

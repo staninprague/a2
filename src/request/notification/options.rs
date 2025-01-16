@@ -19,13 +19,67 @@ impl<'a> CollapseId<'a> {
     }
 }
 
+#[derive(Default, Debug, Clone, Copy, PartialEq, Eq)]
+/// The apns-push-type header field has the following valid values.
+/// The descriptions below describe when and how to use these values.
+/// Send an apns-push-type header with each push. Recent and upcoming features
+/// may not work if this header is missing. See the table above to determine if
+/// this header is required or optional.
+///
+/// see https://developer.apple.com/documentation/usernotifications/setting_up_a_remote_notification_server/sending_notification_requests_to_apns#4294485
+pub enum PushType {
+    /// The push type for notifications that trigger a user interaction—for example,
+    /// an alert, badge, or sound.
+    #[default]
+    Alert,
+    /// The push type for notifications that deliver content in the background, and
+    /// don’t trigger any user interactions.
+    Background,
+    /// The push type for notifications that request a user’s location.
+    Location,
+    /// The push type for notifications that provide information about an incoming
+    /// Voice-over-IP (VoIP) call.
+    Voip,
+    /// The push type to signal changes to a File Provider extension.
+    FileProvider,
+    /// The push type for notifications that tell managed devices to contact the
+    /// MDM server.
+    Mdm,
+    ///  The push type to signal changes to a live activity session.
+    LiveActivity,
+    /// The push type for notifications that provide information about updates to
+    /// your application’s push to talk services.
+    PushToTalk,
+}
+
+impl fmt::Display for PushType {
+    fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
+        f.write_str(match self {
+            PushType::Alert => "alert",
+            PushType::Background => "background",
+            PushType::Location => "location",
+            PushType::Voip => "voip",
+            PushType::FileProvider => "fileprovider",
+            PushType::Mdm => "mdm",
+            PushType::LiveActivity => "liveactivity",
+            PushType::PushToTalk => "pushtotalk",
+        })
+    }
+}
+
 /// Headers to specify options to the notification.
-#[derive(Debug, Clone)]
+#[derive(Debug, Default, Clone)]
 pub struct NotificationOptions<'a> {
     /// A canonical UUID that identifies the notification. If there is an error
     /// sending the notification, APNs uses this value to identify the
     /// notification to your server.
     pub apns_id: Option<&'a str>,
+
+    /// The apns-push-type header field has the following valid values.
+    ///
+    /// Recent and upcoming features may not work if this header is missing.
+    /// See the table above to determine if this header is required or optional.
+    pub apns_push_type: Option<PushType>,
 
     /// A UNIX epoch date expressed in seconds (UTC). This header identifies the
     /// date when the notification is no longer valid and can be discarded.
@@ -60,18 +114,6 @@ pub struct NotificationOptions<'a> {
     /// user as a single notification. The value of this key must not exceed 64
     /// bytes.
     pub apns_collapse_id: Option<CollapseId<'a>>,
-}
-
-impl<'a> Default for NotificationOptions<'a> {
-    fn default() -> NotificationOptions<'a> {
-        NotificationOptions {
-            apns_id: None,
-            apns_expiration: None,
-            apns_priority: None,
-            apns_topic: None,
-            apns_collapse_id: None,
-        }
-    }
 }
 
 /// The importance how fast to bring the notification for the user..
