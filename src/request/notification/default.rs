@@ -544,7 +544,7 @@ impl<'a> NotificationBuilder<'a> for DefaultNotificationBuilder<'a> {
     }
 }
 
-impl<'a> Default for DefaultNotificationBuilder<'a> {
+impl Default for DefaultNotificationBuilder<'_> {
     fn default() -> Self {
         Self::new()
     }
