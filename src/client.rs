@@ -358,7 +358,7 @@ jDwmlD1Gg0yJt1e38djFwsxsfr5q2hv0Rj9fTEqAPr8H7mGm0wKxZ7iQ
         let request = client.build_request(payload).unwrap();
         let uri = format!("{}", request.uri());
 
-        assert_eq!("https://api.push.apple.com:443/3/device/a_test_id", &uri);
+        assert_eq!("https://api.push.apple.com/3/device/a_test_id", &uri);
     }
 
     #[test]
@@ -374,7 +374,7 @@ jDwmlD1Gg0yJt1e38djFwsxsfr5q2hv0Rj9fTEqAPr8H7mGm0wKxZ7iQ
         let request = client.build_request(payload).unwrap();
         let uri = format!("{}", request.uri());
 
-        assert_eq!("https://api.sandbox.push.apple.com:443/3/device/a_test_id", &uri);
+        assert_eq!("https://api.sandbox.push.apple.com/3/device/a_test_id", &uri);
     }
 
     #[test]
